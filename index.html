@@ -32,12 +32,39 @@ body{font-family:'Geist',sans-serif;background:var(--bg);color:var(--t1);display
 
 /* LAYOUT */
 .layout{flex:1;display:grid;grid-template-columns:240px 1fr 280px;overflow:hidden}
-@media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar-left,.sidebar-right{display:none}}
 .sidebar-left,.sidebar-right{display:flex;flex-direction:column;border-right:1px solid var(--b1);overflow-y:auto}
 .sidebar-right{border-right:none;border-left:1px solid var(--b1)}
 .panel-mid{display:flex;flex-direction:column;overflow:hidden}
 .sec{padding:14px 16px;border-bottom:1px solid var(--b1)}
 .sec-label{font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:10px}
+
+/* MOBILE LAYOUT OPTIMIZATION (Up to 900px) */
+@media(max-width:900px){
+  .layout {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+  .panel-mid {
+    overflow: visible;
+    order: 1; /* Main interface stays on top */
+  }
+  .sidebar-left {
+    order: 2;
+    border-right: none;
+    border-top: 1px solid var(--b1);
+    overflow: visible;
+  }
+  .sidebar-right {
+    order: 3;
+    border-left: none;
+    border-top: 1px solid var(--b1);
+    overflow: visible;
+  }
+  .feed {
+    max-height: 50vh; /* Prevents endless scroll from burying other columns */
+    overflow-y: auto !important;
+  }
+}
 
 /* QR */
 .qr-box{display:flex;flex-direction:column;align-items:center;gap:10px}
@@ -86,6 +113,12 @@ textarea.inp{resize:none;min-height:56px;line-height:1.5}
 .btn.ghost:hover{border-color:var(--b3);color:var(--t1)}
 .btn.sm{padding:7px 12px;font-size:12px}
 
+@media(max-width:600px) {
+  .compose-meta {
+    grid-template-columns: 1fr; /* Stack meta input blocks on small devices */
+  }
+}
+
 /* DROP ZONE */
 .drop-zone{border:2px dashed var(--b2);border-radius:var(--r);padding:22px 20px;text-align:center;cursor:pointer;transition:.2s;position:relative}
 .drop-zone:hover,.drop-zone.over{border-color:var(--accent);background:var(--accent-dim)}
@@ -94,6 +127,12 @@ textarea.inp{resize:none;min-height:56px;line-height:1.5}
 .drop-icon svg{width:20px;height:20px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round}
 .drop-title{font-size:14px;font-weight:500;margin-bottom:3px}
 .drop-sub{font-size:12px;color:var(--t2)}
+
+@media(max-width:768px) {
+  .drop-zone {
+    display: none; /* Hide large file drop area on tiny screens where touch clicks rule */
+  }
+}
 
 /* PROGRESS */
 .progress-wrap{display:none;align-items:center;gap:10px;padding:10px 14px;background:var(--s1);border-top:1px solid var(--b1)}
@@ -171,7 +210,6 @@ textarea.inp{resize:none;min-height:56px;line-height:1.5}
 </head>
 <body>
 
-<!-- LOADING -->
 <div id="loadingScreen">
   <div class="loading-logo">
     <div class="loading-logo-sq">
@@ -183,7 +221,6 @@ textarea.inp{resize:none;min-height:56px;line-height:1.5}
   <div class="loading-sub">Detecting your network…</div>
 </div>
 
-<!-- MAIN APP (hidden until room loaded) -->
 <div id="appScreen" style="display:none;flex-direction:column;flex:1;overflow:hidden">
 
   <div class="topbar">
@@ -201,7 +238,6 @@ textarea.inp{resize:none;min-height:56px;line-height:1.5}
 
   <div class="layout">
 
-    <!-- LEFT: QR + Devices -->
     <div class="sidebar-left">
       <div class="sec">
         <div class="sec-label">Scan to join</div>
@@ -218,7 +254,6 @@ textarea.inp{resize:none;min-height:56px;line-height:1.5}
       </div>
     </div>
 
-    <!-- MID: Feed + Compose -->
     <div class="panel-mid">
       <div class="target-bar">
         <span class="target-label">Sending to:</span>
@@ -268,7 +303,6 @@ textarea.inp{resize:none;min-height:56px;line-height:1.5}
       </div>
     </div>
 
-    <!-- RIGHT: Activity -->
     <div class="sidebar-right">
       <div class="sec"><div class="sec-label">Activity log</div></div>
       <div class="activity" id="activityLog"></div>
@@ -277,7 +311,6 @@ textarea.inp{resize:none;min-height:56px;line-height:1.5}
   </div>
 </div>
 
-<!-- PREVIEW -->
 <div class="preview-overlay" id="previewOverlay" onclick="closePreview(event)">
   <div class="preview-inner">
     <button class="preview-close" onclick="closePreview()">✕</button>
@@ -286,7 +319,6 @@ textarea.inp{resize:none;min-height:56px;line-height:1.5}
   </div>
 </div>
 
-<!-- NAME MODAL -->
 <div class="modal-bg" id="nameModal">
   <div class="modal">
     <h3>Your display name</h3>
