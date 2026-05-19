@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0d0d0d">
+<title>Droply</title>
+<link rel="manifest" href="/manifest.json">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d0d;
+  --s1:#161616;
+  --s2:#1f1f1f;
+  --s3:#282828;
+  --b1:rgba(255,255,255,0.06);
+  --b2:rgba(255,255,255,0.11);
+  --b3:rgba(255,255,255,0.18);
+  --t1:#efefef;
+  --t2:#888;
+  --t3:#555;
+  --accent:#6d65f5;
+  --accent-dim:rgba(109,101,245,0.15);
+  --green:#3ecf8e;
+  --red:#f96464;
+  --amber:#f59e0b;
+  --blue:#3b82f6;
+  --r:12px;--rs:8px;--rxs:6px;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Geist',sans-serif;background:var(--bg);color:var(--t1);display:flex;flex-direction:column}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(13,13,13,.95);backdrop-filter:blur(16px);z-index:200}
+.logo{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:600;letter-spacing:-.3px}
+.logo-sq{width:30px;height:30px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center}
+.logo-sq svg{width:16px;height:16px;stroke:white;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.conn-badge{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2);font-family:'Geist Mono',monospace}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--t3);transition:.3s}
+.dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+.topbar-name{font-size:13px;color:var(--t2);cursor:pointer;padding:5px 10px;border:1px solid var(--b2);border-radius:var(--rxs);transition:.2s}
+.topbar-name:hover{border-color:var(--b3);color:var(--t1)}
+
+/* ── LAYOUT ── */
+.layout{flex:1;display:grid;grid-template-columns:260px 1fr 300px;overflow:hidden}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar-left,.sidebar-right{display:none}}
+
+/* ── PANELS ── */
+.sidebar-left,.sidebar-right{display:flex;flex-direction:column;border-right:1px solid var(--b1);overflow-y:auto}
+.sidebar-right{border-right:none;border-left:1px solid var(--b1)}
+.panel-mid{display:flex;flex-direction:column;overflow:hidden}
+
+.sec{padding:16px;border-bottom:1px solid var(--b1)}
+.sec-label{font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:12px}
+
+/* ── QR ── */
+.qr-box{display:flex;flex-direction:column;align-items:center;gap:10px}
+.qr-frame{width:148px;height:148px;background:#fff;border-radius:10px;padding:7px;display:flex;align-items:center;justify-content:center}
+.qr-frame img{width:100%;height:100%}
+.qr-url{font-family:'Geist Mono',monospace;font-size:11px;color:var(--accent);text-align:center;word-break:break-all}
+.qr-hint{font-size:11px;color:var(--t3);text-align:center}
+
+/* ── DEVICES ── */
+.devices{display:flex;flex-direction:column;gap:6px}
+.dev{display:flex;align-items:center;gap:9px;padding:9px 10px;background:var(--s2);border-radius:var(--rs);border:1px solid var(--b1);cursor:default;transition:.2s;user-select:none}
+.dev:hover{border-color:var(--b2)}
+.dev.selected{border-color:var(--accent);background:var(--accent-dim)}
+.dev.me{border-color:rgba(109,101,245,.35)}
+.dev-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;background:var(--accent)}
+.dev-av.phone{background:#0ea5e9}
+.dev-av.desktop{background:#8b5cf6}
+.dev-av.tablet{background:#10b981}
+.dev-info{flex:1;min-width:0}
+.dev-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dev-type{font-size:10px;color:var(--t3);margin-top:1px}
+.dev-actions{display:flex;gap:4px}
+.btn-icon{width:26px;height:26px;border-radius:5px;border:1px solid var(--b2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--t2);transition:.15s;font-size:13px}
+.btn-icon:hover{background:var(--s3);color:var(--t1)}
+.btn-icon.danger:hover{background:rgba(249,100,100,.15);color:var(--red);border-color:rgba(249,100,100,.3)}
+.me-tag{font-size:10px;color:var(--accent);background:var(--accent-dim);padding:2px 6px;border-radius:99px}
+
+/* ── BROADCAST TARGET ── */
+.target-bar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--s1);border-bottom:1px solid var(--b1);font-size:13px;flex-shrink:0}
+.target-label{color:var(--t2)}
+.target-chip{display:flex;align-items:center;gap:6px;background:var(--accent-dim);border:1px solid rgba(109,101,245,.3);border-radius:99px;padding:3px 10px 3px 8px;font-size:12px;font-weight:500;color:var(--accent)}
+.target-chip button{background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;line-height:1;padding:0;margin-left:2px}
+.broadcast-chip{display:flex;align-items:center;gap:5px;color:var(--t3);font-size:12px}
+
+/* ── COMPOSE ── */
+.compose{padding:14px 16px;border-top:1px solid var(--b1);flex-shrink:0;display:flex;flex-direction:column;gap:10px}
+.compose-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.inp{background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);color:var(--t1);font-family:'Geist',sans-serif;font-size:13px;padding:8px 11px;outline:none;transition:.2s;width:100%}
+.inp:focus{border-color:var(--accent)}
+.inp::placeholder{color:var(--t3)}
+textarea.inp{resize:none;min-height:60px;line-height:1.5}
+.compose-row{display:flex;gap:8px;align-items:flex-end}
+.compose-row textarea{flex:1}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:var(--rs);padding:9px 16px;font-family:'Geist',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:.15s;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.btn:active{opacity:.8;transform:scale(.97)}
+.btn.ghost{background:transparent;border:1px solid var(--b2);color:var(--t2)}
+.btn.ghost:hover{border-color:var(--b3);color:var(--t1)}
+.btn.sm{padding:7px 12px;font-size:12px}
+
+/* ── DROP ZONE ── */
+.drop-zone{border:2px dashed var(--b2);border-radius:var(--r);padding:28px 20px;text-align:center;cursor:pointer;transition:.2s;position:relative;flex-shrink:0}
+.drop-zone:hover,.drop-zone.over{border-color:var(--accent);background:var(--accent-dim)}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{width:44px;height:44px;background:var(--s2);border:1px solid var(--b2);border-radius:10px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+.drop-icon svg{width:22px;height:22px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round}
+.drop-title{font-size:15px;font-weight:500;margin-bottom:4px}
+.drop-sub{font-size:12px;color:var(--t2)}
+
+/* ── PROGRESS ── */
+.progress-wrap{display:none;align-items:center;gap:10px;padding:10px 14px;background:var(--s1);border-top:1px solid var(--b1)}
+.progress-wrap.show{display:flex}
+.progress-track{flex:1;height:3px;background:var(--s3);border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);width:0%;transition:width .2s;border-radius:99px}
+.progress-text{font-size:11px;color:var(--t2);font-family:'Geist Mono',monospace;white-space:nowrap}
+
+/* ── FEED ── */
+.feed{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.feed::-webkit-scrollbar{width:3px}
+.feed::-webkit-scrollbar-thumb{background:var(--b2);border-radius:99px}
+
+.msg{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:13px 15px;animation:pop .2s ease}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.msg.private{border-color:rgba(109,101,245,.3);background:rgba(109,101,245,.06)}
+.msg.echo{border-color:rgba(62,207,142,.2);background:rgba(62,207,142,.04)}
+.msg-head{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.msg-from{font-size:13px;font-weight:600;color:var(--accent)}
+.msg-from.echo-from{color:var(--green)}
+.msg-tag{font-size:10px;padding:2px 7px;border-radius:99px;font-weight:500}
+.msg-tag.priv{background:rgba(109,101,245,.2);color:var(--accent)}
+.msg-tag.broad{background:var(--s3);color:var(--t3)}
+.msg-time{font-size:11px;color:var(--t3);font-family:'Geist Mono',monospace;margin-left:auto}
+.msg-subject{font-size:14px;font-weight:600;margin-bottom:3px;color:var(--t1)}
+.msg-desc{font-size:13px;color:var(--t2);margin-bottom:10px;line-height:1.5}
+.msg-text{font-size:14px;line-height:1.6}
+
+/* ── FILES ── */
+.file-grid{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.file-card{display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:var(--rs);border:1px solid var(--b1);overflow:hidden}
+.file-thumb{width:52px;height:52px;object-fit:cover;flex-shrink:0;display:block}
+.file-thumb-icon{width:52px;height:52px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;background:var(--s3)}
+.file-info{flex:1;min-width:0;padding:0 2px}
+.file-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-size{font-size:11px;color:var(--t3);margin-top:2px}
+.file-dl{margin-right:10px;display:flex;gap:6px}
+.dl-btn{display:flex;align-items:center;gap:4px;background:transparent;border:1px solid var(--b2);border-radius:var(--rxs);padding:5px 10px;font-size:12px;color:var(--t1);text-decoration:none;transition:.15s;font-family:'Geist',sans-serif;cursor:pointer}
+.dl-btn:hover{background:var(--s3);border-color:var(--b3)}
+
+/* ── VIDEO / IMG PREVIEW ── */
+.preview-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:999;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.preview-overlay.show{display:flex}
+.preview-inner{position:relative;max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center;gap:12px}
+.preview-inner img,.preview-inner video{max-width:90vw;max-height:78vh;border-radius:10px;object-fit:contain}
+.preview-close{position:absolute;top:-14px;right:-14px;width:32px;height:32px;background:var(--s2);border:1px solid var(--b2);border-radius:50%;cursor:pointer;font-size:16px;color:var(--t1);display:flex;align-items:center;justify-content:center;transition:.15s}
+.preview-close:hover{background:var(--red);border-color:transparent}
+.preview-label{font-size:13px;color:var(--t2);max-width:400px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── SYSTEM MSG ── */
+.sys-msg{text-align:center;font-size:11px;color:var(--t3);padding:2px 0}
+
+/* ── ACTIVITY PANEL ── */
+.activity{padding:16px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1}
+.act-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:var(--rs);border:1px solid var(--b1)}
+.act-dot{width:6px;height:6px;border-radius:50%;background:var(--green);margin-top:5px;flex-shrink:0}
+.act-text{font-size:12px;color:var(--t2);line-height:1.5}
+.act-time{font-size:10px;color:var(--t3);font-family:'Geist Mono',monospace;margin-left:auto;white-space:nowrap}
+
+/* ── NAME MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-bg.show{display:flex}
+.modal{background:var(--s1);border:1px solid var(--b2);border-radius:var(--r);padding:24px;width:320px;display:flex;flex-direction:column;gap:14px}
+.modal h3{font-size:16px;font-weight:600}
+.modal p{font-size:13px;color:var(--t2);line-height:1.5}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end}
+
+/* ── EMPTY ── */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:10px;padding:32px;text-align:center}
+.empty svg{width:48px;height:48px;opacity:.2;stroke:var(--t1);fill:none;stroke-width:1.5;stroke-linecap:round}
+.empty p{font-size:14px;color:var(--t3)}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-sq">
+      <svg viewBox="0 0 20 20"><path d="M10 3v10M10 3L7 6M10 3l3 3"/><path d="M4 14v2a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+    </div>
+    Droply
+  </div>
+  <div class="topbar-right">
+    <div class="conn-badge"><div class="dot" id="dot"></div><span id="connLabel">connecting</span></div>
+    <div class="topbar-name" id="topbarName" onclick="openNameModal()">set name ✎</div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- LEFT: QR + Devices -->
+  <div class="sidebar-left">
+    <div class="sec">
+      <div class="sec-label">Scan to join</div>
+      <div class="qr-box">
+        <div class="qr-frame"><img id="qrImg" src="" alt="QR"/></div>
+        <div class="qr-url" id="qrUrl">—</div>
+        <div class="qr-hint">Same WiFi required</div>
+      </div>
+    </div>
+    <div class="sec" style="flex:1">
+      <div class="sec-label">Devices on network</div>
+      <div class="devices" id="devicesList"><div style="font-size:12px;color:var(--t3)">Waiting...</div></div>
+    </div>
+  </div>
+
+  <!-- MID: Feed + Compose -->
+  <div class="panel-mid">
+    <div class="target-bar">
+      <span class="target-label">Sending to:</span>
+      <div id="targetDisplay">
+        <span class="broadcast-chip">📡 Everyone on network</span>
+      </div>
+    </div>
+
+    <div class="feed" id="feed">
+      <div class="empty" id="emptyState">
+        <svg viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+        <p>Files and messages appear here</p>
+      </div>
+    </div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-text" id="progressText">0%</div>
+    </div>
+
+    <div class="compose">
+      <div class="compose-meta">
+        <input class="inp" id="subjectInp" placeholder="Subject (optional)" maxlength="100"/>
+        <input class="inp" id="descInp" placeholder="Description (optional)" maxlength="500"/>
+      </div>
+      <div class="compose-row">
+        <textarea class="inp" id="textInp" placeholder="Type a message… (Enter to send)" rows="2" onkeydown="handleKey(event)"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label class="btn ghost sm" style="cursor:pointer;position:relative">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Attach files
+          <input type="file" multiple id="fileInp" onchange="handleFiles(this.files)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%"/>
+        </label>
+        <div style="flex:1"></div>
+        <button class="btn sm" onclick="sendMessage()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Send
+        </button>
+      </div>
+
+      <!-- Drop zone -->
+      <div class="drop-zone" id="dropZone">
+        <input type="file" multiple onchange="handleFiles(this.files)"/>
+        <div class="drop-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div class="drop-title">Drop files here</div>
+        <div class="drop-sub">Images · Videos · Any file up to 2 GB</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Activity log -->
+  <div class="sidebar-right">
+    <div class="sec">
+      <div class="sec-label">Activity log</div>
+    </div>
+    <div class="activity" id="activityLog"></div>
+  </div>
+</div>
+
+<!-- PREVIEW OVERLAY -->
+<div class="preview-overlay" id="previewOverlay" onclick="closePreview(event)">
+  <div class="preview-inner" id="previewInner">
+    <button class="preview-close" onclick="closePreview()">✕</button>
+    <div id="previewMedia"></div>
+    <div class="preview-label" id="previewLabel"></div>
+  </div>
+</div>
+
+<!-- NAME MODAL -->
+<div class="modal-bg" id="nameModal">
+  <div class="modal">
+    <h3>Your display name</h3>
+    <p>This is how other devices on the network see you.</p>
+    <input class="inp" id="nameInp" placeholder="e.g. Mom's iPhone" maxlength="32" onkeydown="if(event.key==='Enter')saveName()"/>
+    <div class="modal-btns">
+      <button class="btn ghost sm" onclick="closeNameModal()">Cancel</button>
+      <button class="btn sm" onclick="saveName()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let ws, myId, myName = '', targetId = null;
+const deviceType = /Mobi|Android/i.test(navigator.userAgent) ? 'phone' : /iPad/i.test(navigator.userAgent) ? 'tablet' : 'desktop';
+
+// ── WS ─────────────────────────────────────────────────────────────────────
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}`);
+
+  ws.onopen = () => {
+    dot.classList.add('on');
+    document.getElementById('connLabel').textContent = 'connected';
+    const saved = localStorage.getItem('droply_name');
+    if (saved) { myName = saved; document.getElementById('topbarName').textContent = saved + ' ✎'; }
+    identify();
+  };
+
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if (m.type === 'welcome') { myId = m.id; identify(); loadQR(); }
+    else if (m.type === 'clients') renderDevices(m.clients);
+    else if (m.type === 'files') renderFileMsg(m);
+    else if (m.type === 'message') renderTextMsg(m);
+    else if (m.type === 'system') renderSystem(m.text);
+    else if (m.type === 'error') handleError(m);
+  };
+
+  ws.onclose = () => {
+    dot.classList.remove('on');
+    document.getElementById('connLabel').textContent = 'reconnecting…';
+    setTimeout(connect, 2000);
+  };
+}
+
+const dot = document.getElementById('dot');
+
+function identify() {
+  const name = myName || localStorage.getItem('droply_name') || '';
+  if (ws?.readyState === 1) ws.send(JSON.stringify({ type: 'identify', name: name || `Device ${myId}`, deviceType }));
+}
+
+function handleError(m) {
+  if (m.code === 'NOT_LOCAL') {
+    document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;text-align:center;padding:24px">
+      <div style="font-size:40px">🔒</div>
+      <div style="font-size:20px;font-weight:600">Local network only</div>
+      <div style="font-size:14px;color:var(--t2);max-width:360px">Droply only works on the same WiFi network as the host device. You cannot connect from the internet.</div>
+    </div>`;
+  } else if (m.code === 'BLOCKED') {
+    document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;text-align:center;padding:24px">
+      <div style="font-size:40px">🚫</div>
+      <div style="font-size:20px;font-weight:600">You've been blocked</div>
+      <div style="font-size:14px;color:var(--t2)">The host has blocked you from this session.</div>
+    </div>`;
+  }
+}
+
+// ── Devices ────────────────────────────────────────────────────────────────
+function renderDevices(clients) {
+  const list = document.getElementById('devicesList');
+  document.getElementById('connLabel').textContent = `${clients.length} device${clients.length !== 1 ? 's' : ''}`;
+  list.innerHTML = clients.map(c => {
+    const isMe = c.id === myId;
+    const av = (c.name || 'D')[0].toUpperCase();
+    return `<div class="dev${isMe ? ' me' : ''}${targetId === c.id ? ' selected' : ''}" id="dev-${c.id}">
+      <div class="dev-av ${c.deviceType}">${av}</div>
+      <div class="dev-info">
+        <div class="dev-name">${esc(c.name)}</div>
+        <div class="dev-type">${c.deviceType}</div>
+      </div>
+      ${isMe ? '<span class="me-tag">you</span>' : `<div class="dev-actions">
+        <button class="btn-icon" title="Send privately" onclick="selectTarget(${c.id},'${esc(c.name)}')">✉</button>
+        <button class="btn-icon danger" title="Block device" onclick="blockDevice(${c.id},'${esc(c.name)}')">🚫</button>
+      </div>`}
+    </div>`;
+  }).join('');
+}
+
+function selectTarget(id, name) {
+  targetId = id;
+  document.getElementById('targetDisplay').innerHTML = `
+    <div class="target-chip">🔏 ${esc(name)} <button onclick="clearTarget()">✕</button></div>`;
+  logActivity(`Sending privately to ${name}`);
+}
+
+function clearTarget() {
+  targetId = null;
+  document.getElementById('targetDisplay').innerHTML = `<span class="broadcast-chip">📡 Everyone on network</span>`;
+}
+
+function blockDevice(id, name) {
+  if (!confirm(`Block "${name}"? They will be disconnected and cannot rejoin.`)) return;
+  ws.send(JSON.stringify({ type: 'block', targetId: id }));
+  logActivity(`Blocked ${name}`);
+}
+
+// ── Send ───────────────────────────────────────────────────────────────────
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function sendMessage() {
+  const subject = document.getElementById('subjectInp').value.trim();
+  const description = document.getElementById('descInp').value.trim();
+  const text = document.getElementById('textInp').value.trim();
+  if (!text && !subject && !description) return;
+  ws.send(JSON.stringify({ type: 'message', subject, description, text, toId: targetId || undefined }));
+  document.getElementById('textInp').value = '';
+}
+
+async function handleFiles(files) {
+  if (!files?.length) return;
+  const subject = document.getElementById('subjectInp').value.trim();
+  const description = document.getElementById('descInp').value.trim();
+
+  const fd = new FormData();
+  for (const f of files) fd.append('files', f);
+  if (subject) fd.append('subject', subject);
+  if (description) fd.append('description', description);
+  if (targetId) fd.append('toId', targetId);
+
+  const pw = document.getElementById('progressWrap');
+  const pf = document.getElementById('progressFill');
+  const pt = document.getElementById('progressText');
+  pw.classList.add('show');
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/upload');
+  xhr.upload.onprogress = e => {
+    if (e.lengthComputable) { const p = Math.round(e.loaded/e.total*100); pf.style.width=p+'%'; pt.textContent=p+'%'; }
+  };
+  xhr.onload = () => { setTimeout(() => { pw.classList.remove('show'); pf.style.width='0%'; }, 800); document.getElementById('fileInp').value = ''; };
+  xhr.send(fd);
+}
+
+// ── Render Feed ────────────────────────────────────────────────────────────
+function clearEmpty() { document.getElementById('emptyState')?.remove(); }
+
+function renderFileMsg(m) {
+  clearEmpty();
+  const feed = document.getElementById('feed');
+  const time = fmt(m.time);
+  const isEcho = m.echo;
+  const filesHtml = m.files.map(f => fileCard(f)).join('');
+  const el = div('msg' + (m.private?' private':'') + (isEcho?' echo':''));
+  el.innerHTML = `
+    <div class="msg-head">
+      <span class="msg-from${isEcho?' echo-from':''}">${isEcho?'You':esc(m.fromName)}</span>
+      <span class="msg-tag ${m.private?'priv':'broad'}">${m.private?'🔏 private':'📡 broadcast'}</span>
+      <span class="msg-time">${time}</span>
+    </div>
+    ${m.subject?`<div class="msg-subject">${esc(m.subject)}</div>`:''}
+    ${m.description?`<div class="msg-desc">${esc(m.description)}</div>`:''}
+    <div class="file-grid">${filesHtml}</div>`;
+  feed.appendChild(el);
+  feed.scrollTop = feed.scrollHeight;
+  logActivity(`${isEcho?'You':m.fromName} sent ${m.files.length} file(s)${m.private?' privately':''}`);
+}
+
+function renderTextMsg(m) {
+  clearEmpty();
+  const feed = document.getElementById('feed');
+  const isEcho = m.echo;
+  const el = div('msg' + (m.private?' private':'') + (isEcho?' echo':''));
+  el.innerHTML = `
+    <div class="msg-head">
+      <span class="msg-from${isEcho?' echo-from':''}">${isEcho?'You':esc(m.fromName)}</span>
+      <span class="msg-tag ${m.private?'priv':'broad'}">${m.private?'🔏 private':'📡 broadcast'}</span>
+      <span class="msg-time">${fmt(m.time)}</span>
+    </div>
+    ${m.subject?`<div class="msg-subject">${esc(m.subject)}</div>`:''}
+    ${m.description?`<div class="msg-desc">${esc(m.description)}</div>`:''}
+    ${m.text?`<div class="msg-text">${esc(m.text)}</div>`:''}`;
+  feed.appendChild(el);
+  feed.scrollTop = feed.scrollHeight;
+  logActivity(`${isEcho?'You':m.fromName} sent a message`);
+}
+
+function renderSystem(text) {
+  const feed = document.getElementById('feed');
+  const el = div('sys-msg'); el.textContent = text;
+  feed.appendChild(el);
+  feed.scrollTop = feed.scrollHeight;
+  logActivity(text);
+}
+
+function fileCard(f) {
+  const ext = f.name.split('.').pop().toLowerCase();
+  const isImg = ['jpg','jpeg','png','gif','webp','heic','avif','svg'].includes(ext);
+  const isVid = ['mp4','mov','avi','mkv','webm','m4v'].includes(ext);
+  let thumb = '';
+  if (isImg) thumb = `<img class="file-thumb" src="${f.url}" alt="${esc(f.name)}" loading="lazy" onclick="openPreview('img','${f.url}','${esc(f.name)}')" style="cursor:zoom-in"/>`;
+  else if (isVid) thumb = `<div class="file-thumb-icon" onclick="openPreview('vid','${f.url}','${esc(f.name)}')" style="cursor:pointer">▶️</div>`;
+  else thumb = `<div class="file-thumb-icon">${fileEmoji(ext)}</div>`;
+  return `<div class="file-card">
+    ${thumb}
+    <div class="file-info">
+      <div class="file-name">${esc(f.name)}</div>
+      <div class="file-size">${fmtSize(f.size)}</div>
+    </div>
+    <div class="file-dl">
+      <a class="dl-btn" href="${f.url}" download="${esc(f.name)}">↓ Save</a>
+    </div>
+  </div>`;
+}
+
+function fileEmoji(ext) {
+  if (['pdf'].includes(ext)) return '📄';
+  if (['doc','docx'].includes(ext)) return '📝';
+  if (['xls','xlsx'].includes(ext)) return '📊';
+  if (['zip','rar','7z'].includes(ext)) return '🗜️';
+  if (['mp3','aac','wav','flac'].includes(ext)) return '🎵';
+  return '📁';
+}
+
+// ── Preview ────────────────────────────────────────────────────────────────
+function openPreview(type, url, name) {
+  const med = document.getElementById('previewMedia');
+  med.innerHTML = type === 'img'
+    ? `<img src="${url}" alt="${name}"/>`
+    : `<video src="${url}" controls autoplay style="max-width:90vw;max-height:78vh;border-radius:10px"></video>`;
+  document.getElementById('previewLabel').textContent = name;
+  document.getElementById('previewOverlay').classList.add('show');
+}
+function closePreview(e) {
+  if (e && e.target !== document.getElementById('previewOverlay') && !e.currentTarget.classList.contains('preview-close')) return;
+  document.getElementById('previewOverlay').classList.remove('show');
+  document.getElementById('previewMedia').innerHTML = '';
+}
+
+// ── Name Modal ─────────────────────────────────────────────────────────────
+function openNameModal() { document.getElementById('nameInp').value = myName; document.getElementById('nameModal').classList.add('show'); document.getElementById('nameInp').focus(); }
+function closeNameModal() { document.getElementById('nameModal').classList.remove('show'); }
+function saveName() {
+  const n = document.getElementById('nameInp').value.trim();
+  if (!n) return;
+  myName = n;
+  localStorage.setItem('droply_name', n);
+  document.getElementById('topbarName').textContent = n + ' ✎';
+  identify();
+  closeNameModal();
+}
+
+// ── Activity Log ───────────────────────────────────────────────────────────
+function logActivity(text) {
+  const log = document.getElementById('activityLog');
+  const el = div('act-item');
+  el.innerHTML = `<div class="act-dot"></div><div class="act-text">${esc(text)}</div><div class="act-time">${fmt(Date.now())}</div>`;
+  log.prepend(el);
+}
+
+// ── Drag & Drop ────────────────────────────────────────────────────────────
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); handleFiles(e.dataTransfer.files); });
+
+// ── QR ─────────────────────────────────────────────────────────────────────
+async function loadQR() {
+  const r = await fetch('/qr').then(r=>r.json()).catch(()=>null);
+  if (!r) return;
+  document.getElementById('qrImg').src = r.qr;
+  document.getElementById('qrUrl').textContent = r.url;
+}
+
+// ── Utils ──────────────────────────────────────────────────────────────────
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function div(cls) { const d = document.createElement('div'); d.className = cls; return d; }
+function fmt(ts) { return new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+function fmtSize(b) { if(b<1024)return b+'B'; if(b<1048576)return(b/1024).toFixed(1)+'KB'; if(b<1073741824)return(b/1048576).toFixed(1)+'MB'; return(b/1073741824).toFixed(2)+'GB'; }
+
+connect();
+loadQR();
+</script>
+</body>
+</html>
