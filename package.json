@@ -1,0 +1,19 @@
+{
+  "name": "droply",
+  "version": "2.0.0",
+  "description": "Instant file sharing via browser — no app needed",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "busboy": "^1.6.0",
+    "uuid": "^9.0.0",
+    "ws": "^8.16.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
