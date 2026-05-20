@@ -3,307 +3,470 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0d0d0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0e1117">
 <title>Droply</title>
-
+<link rel="manifest" href="/manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- QR scanner + generator for offline mode -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode"></script>
-
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap');
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#0d0d0d;--s1:#161616;--s2:#1f1f1f;--s3:#282828;
-  --b1:rgba(255,255,255,0.06);--b2:rgba(255,255,255,0.11);--b3:rgba(255,255,255,0.18);
-  --t1:#efefef;--t2:#888;--t3:#555;
-  --accent:#6d65f5;--accent-dim:rgba(109,101,245,0.15);
-  --green:#3ecf8e;--red:#f96464;--r:12px;--rs:8px;--rxs:6px;
+  --bg:#0e1117;--s1:#141820;--s2:#1a2030;--s3:#202838;--s4:#262f40;
+  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.10);--b3:rgba(255,255,255,.16);
+  --t1:#eef0f4;--t2:#7e8a9e;--t3:#424e62;
+  --a:#00e5b0;--a-dim:rgba(0,229,176,.1);--a-glow:rgba(0,229,176,.25);
+  --red:#ff5f6d;--amber:#f6a623;--blue:#4f8ef7;
+  --me-bg:rgba(0,229,176,.08);--me-bord:rgba(0,229,176,.18);
+  --them-bg:var(--s1);--them-bord:var(--b1);
+  --r:14px;--rs:10px;--rxs:6px;
+  --safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);--safe-r:env(safe-area-inset-right,0px);
 }
-html,body{height:100%;overflow:hidden}
-/* Modified body to include system font fallbacks just in case Google Fonts is blocked offline */
-body{font-family:'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;background:var(--bg);color:var(--t1);display:flex;flex-direction:column}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:var(--bg)}
+body{font-family:'Sora',sans-serif;color:var(--t1)}
 
-/* TOPBAR */
-.topbar{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(13,13,13,.95);backdrop-filter:blur(16px);z-index:200}
-.logo{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:600;letter-spacing:-.3px}
-.logo-sq{width:30px;height:30px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center}
-.logo-sq svg{width:16px;height:16px;stroke:white;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
-.conn-badge{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2);font-family:'Geist Mono',monospace}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--t3);transition:.3s}
-.dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
-.dot.offline{background:#3b82f6;box-shadow:0 0 6px #3b82f6} /* Added offline dot styling */
-.topbar-name{font-size:13px;color:var(--t2);cursor:pointer;padding:5px 10px;border:1px solid var(--b2);border-radius:var(--rxs);transition:.2s}
-.topbar-name:hover{border-color:var(--b3);color:var(--t1)}
+/* ── LAYOUT ── */
+.app{display:grid;grid-template-columns:272px 1fr;height:100dvh;height:100vh;overflow:hidden}
 
-/* LAYOUT */
-.layout{flex:1;display:grid;grid-template-columns:240px 1fr 280px;overflow:hidden}
-.sidebar-left,.sidebar-right{display:flex;flex-direction:column;border-right:1px solid var(--b1);overflow-y:auto}
-.sidebar-right{border-right:none;border-left:1px solid var(--b1)}
-.panel-mid{display:flex;flex-direction:column;overflow:hidden}
-.sec{padding:14px 16px;border-bottom:1px solid var(--b1)}
-.sec-label{font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:10px}
+/* ── SIDEBAR ── */
+.sidebar{background:var(--s1);border-right:1px solid var(--b1);display:flex;flex-direction:column;overflow:hidden;transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:80}
+.sb-top{padding:calc(14px + var(--safe-t)) 16px 14px;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.logo-mark{width:34px;height:34px;border-radius:9px;background:var(--a);display:flex;align-items:center;justify-content:center;box-shadow:0 0 18px var(--a-glow);flex-shrink:0}
+.logo-mark svg{width:18px;height:18px;stroke:#000;fill:none;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+.logo-name{font-size:17px;font-weight:700;letter-spacing:-.4px;flex:1}
+.sb-top-btns{display:flex;gap:6px}
+.ib{width:32px;height:32px;border-radius:8px;border:1px solid var(--b2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--t2);transition:.15s;font-size:14px}
+.ib:hover{background:var(--s3);border-color:var(--b3);color:var(--t1)}
+.ib:active{transform:scale(.9)}
 
-/* MOBILE LAYOUT OPTIMIZATION */
-@media(max-width:900px){
-  .layout { grid-template-columns: 1fr; overflow-y: auto; }
-  .panel-mid { overflow: visible; order: 1; }
-  .sidebar-left { order: 2; border-right: none; border-top: 1px solid var(--b1); overflow: visible; }
-  .sidebar-right { order: 3; border-left: none; border-top: 1px solid var(--b1); overflow: visible; }
-  .feed { max-height: 50vh; overflow-y: auto !important; }
-}
+/* Mode toggle */
+.mode-row{display:flex;margin:10px 14px 0;background:var(--s2);border:1px solid var(--b1);border-radius:var(--rs);padding:3px;gap:3px;flex-shrink:0}
+.mode-btn{flex:1;padding:7px 4px;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:.15s;background:transparent;color:var(--t3)}
+.mode-btn.active{background:var(--s4);color:var(--t1);box-shadow:0 1px 4px rgba(0,0,0,.3)}
 
-/* QR */
-.qr-box{display:flex;flex-direction:column;align-items:center;gap:10px}
-.qr-frame{width:150px;height:150px;background:#fff;border-radius:10px;padding:7px;display:flex;align-items:center;justify-content:center}
-.qr-frame img{width:100%;height:100%}
-.qr-url{font-family:'Geist Mono',monospace;font-size:11px;color:var(--accent);text-align:center;word-break:break-all}
-.qr-hint{font-size:11px;color:var(--t3);text-align:center;line-height:1.5}
-.lan-badge{font-size:11px;background:var(--accent-dim);color:var(--accent);border:1px solid rgba(109,101,245,.3);border-radius:99px;padding:3px 10px;font-family:'Geist Mono',monospace;letter-spacing:.05em}
+/* Connection state */
+.conn-row{display:flex;align-items:center;gap:8px;margin:8px 14px;padding:9px 12px;background:var(--s2);border-radius:var(--rs);border:1px solid var(--b1);font-size:12px;flex-shrink:0}
+.conn-dot{width:7px;height:7px;border-radius:50%;background:var(--t3);flex-shrink:0;transition:.4s}
+.conn-dot.on{background:var(--a);box-shadow:0 0 8px var(--a)}
+.conn-dot.p2p{background:var(--blue);box-shadow:0 0 8px var(--blue)}
+.conn-dot.offline{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.conn-label{color:var(--t2);flex:1;font-size:11px}
+.conn-label strong{color:var(--t1);font-weight:600}
+.room-code{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3);padding:2px 6px;background:var(--s3);border-radius:4px}
 
-/* DEVICES */
-.devices{display:flex;flex-direction:column;gap:6px}
-.dev{display:flex;align-items:center;gap:9px;padding:9px 10px;background:var(--s2);border-radius:var(--rs);border:1px solid var(--b1);transition:.2s;user-select:none}
-.dev:hover{border-color:var(--b2)}
-.dev.selected{border-color:var(--accent);background:var(--accent-dim)}
-.dev.me{border-color:rgba(109,101,245,.35)}
-.dev-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;background:var(--accent)}
-.dev-av.phone{background:#0ea5e9}.dev-av.desktop{background:#8b5cf6}.dev-av.tablet{background:#10b981}
+/* QR block */
+.qr-block{margin:0 14px 4px;padding:14px;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);display:flex;flex-direction:column;align-items:center;gap:10px;flex-shrink:0}
+.qr-frame{width:148px;height:148px;background:#fff;border-radius:10px;padding:6px;display:flex;align-items:center;justify-content:center}
+.qr-frame img{width:100%;height:100%;display:block}
+.qr-url{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--a);text-align:center;word-break:break-all}
+.qr-hint{font-size:11px;color:var(--t3);text-align:center}
+.qr-share-row{display:flex;gap:6px;width:100%}
+.qr-share-row .sb-btn{flex:1}
+
+/* Offline panel */
+.offline-panel{margin:0 14px 4px;padding:14px;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);display:flex;flex-direction:column;gap:10px;flex-shrink:0;display:none}
+.offline-panel.show{display:flex}
+.op-title{font-size:12px;font-weight:700;color:var(--t1)}
+.op-step{font-size:11px;color:var(--t2);line-height:1.5}
+.op-step strong{color:var(--a)}
+.op-qr-wrap{background:#fff;border-radius:10px;padding:6px;display:flex;align-items:center;justify-content:center;min-height:148px}
+.op-qr-wrap canvas,.op-qr-wrap img{max-width:136px;max-height:136px}
+.op-btn{display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--b2);border-radius:var(--rs);background:var(--s3);padding:9px 12px;font-family:'Sora',sans-serif;font-size:12px;font-weight:500;color:var(--t1);cursor:pointer;transition:.15s;width:100%}
+.op-btn:hover{background:var(--s4);border-color:var(--b3)}
+.op-btn:active{transform:scale(.96)}
+.op-btn.primary{background:var(--a-dim);border-color:var(--a-glow);color:var(--a)}
+.op-btn.primary:hover{background:rgba(0,229,176,.15)}
+.op-status{font-size:11px;text-align:center;padding:6px;border-radius:var(--rxs);background:var(--s3)}
+.op-status.waiting{color:var(--amber)}
+.op-status.connected{color:var(--a)}
+.op-status.error{color:var(--red)}
+
+/* Shared sb-btn */
+.sb-btn{display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid var(--b2);border-radius:var(--rxs);background:var(--s3);padding:7px 10px;font-family:'Sora',sans-serif;font-size:11px;font-weight:500;color:var(--t1);cursor:pointer;transition:.15s;white-space:nowrap}
+.sb-btn:hover{background:var(--s4);border-color:var(--b3)}
+.sb-btn:active{transform:scale(.95)}
+.sb-btn.primary{background:var(--a-dim);border-color:var(--a-glow);color:var(--a)}
+.sb-btn.primary:hover{background:rgba(0,229,176,.15)}
+
+/* Device list */
+.devs-label{padding:6px 16px;font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--t3);flex-shrink:0}
+.devs{flex:1;overflow-y:auto;padding:0 10px 12px}
+.devs::-webkit-scrollbar{width:3px}
+.devs::-webkit-scrollbar-thumb{background:var(--b2);border-radius:99px}
+.dev{display:flex;align-items:center;gap:9px;padding:9px 8px;border-radius:var(--rs);cursor:pointer;user-select:none;border:1px solid transparent;margin-bottom:3px;transition:.15s}
+.dev:hover{background:var(--s2);border-color:var(--b1)}
+.dev.sel{background:var(--a-dim);border-color:rgba(0,229,176,.2)}
+.dev.is-me{opacity:.55;cursor:default;pointer-events:none}
+.dev-av{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;background:var(--s3);color:var(--t2);position:relative}
+.dev-av.phone{background:#0d2d3d;color:#4f8ef7}
+.dev-av.tablet{background:#0d2d24;color:var(--a)}
+.dev-av.desktop{background:#1e1830;color:#a78bfa}
+.dev-online{position:absolute;bottom:0;right:0;width:9px;height:9px;border-radius:50%;background:var(--a);border:2px solid var(--s1)}
 .dev-info{flex:1;min-width:0}
 .dev-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dev-type{font-size:10px;color:var(--t3);margin-top:1px}
-.dev-actions{display:flex;gap:4px}
-.btn-icon{width:26px;height:26px;border-radius:5px;border:1px solid var(--b2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--t2);transition:.15s;font-size:13px}
-.btn-icon:hover{background:var(--s3);color:var(--t1)}
-.btn-icon.danger:hover{background:rgba(249,100,100,.15);color:var(--red);border-color:rgba(249,100,100,.3)}
-.me-tag{font-size:10px;color:var(--accent);background:var(--accent-dim);padding:2px 6px;border-radius:99px}
+.me-badge{font-size:10px;color:var(--a);background:var(--a-dim);padding:2px 7px;border-radius:99px;white-space:nowrap}
+.dev-blk{width:26px;height:26px;border-radius:6px;border:1px solid var(--b1);background:transparent;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;color:var(--t3);transition:.15s}
+.dev-blk:hover{background:rgba(255,95,109,.12);color:var(--red);border-color:rgba(255,95,109,.25)}
+.no-devs{padding:20px 14px;font-size:12px;color:var(--t3);text-align:center}
 
-/* TARGET BAR */
-.target-bar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--s1);border-bottom:1px solid var(--b1);font-size:13px;flex-shrink:0}
-.target-label{color:var(--t2)}
-.target-chip{display:flex;align-items:center;gap:6px;background:var(--accent-dim);border:1px solid rgba(109,101,245,.3);border-radius:99px;padding:3px 10px 3px 8px;font-size:12px;font-weight:500;color:var(--accent)}
-.target-chip button{background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;line-height:1;padding:0;margin-left:2px}
-.broadcast-chip{display:flex;align-items:center;gap:5px;color:var(--t3);font-size:12px}
+/* ── MAIN ── */
+.main{display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.chat-hd{display:flex;align-items:center;gap:10px;padding:calc(12px + var(--safe-t)) 16px 12px;border-bottom:1px solid var(--b1);background:rgba(14,17,23,.9);backdrop-filter:blur(16px);flex-shrink:0;z-index:10}
+.hamburger{display:none;background:none;border:none;cursor:pointer;color:var(--t2);padding:4px;flex-shrink:0}
+.hamburger svg{width:20px;height:20px;stroke:currentColor;stroke-width:2;stroke-linecap:round;fill:none}
+.chat-info{flex:1;min-width:0}
+.chat-to{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-sub{font-size:11px;color:var(--t2);margin-top:1px}
+.mode-badge{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:4px 9px;border-radius:99px;flex-shrink:0;white-space:nowrap}
+.mode-badge.lan{color:var(--a);background:var(--a-dim);border:1px solid var(--a-glow)}
+.mode-badge.offline-badge{color:var(--amber);background:rgba(246,166,35,.1);border:1px solid rgba(246,166,35,.25)}
+.mode-badge.p2p-badge{color:var(--blue);background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2)}
+.mode-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 6px currentColor}
 
-/* COMPOSE */
-.compose{padding:14px 16px;border-top:1px solid var(--b1);flex-shrink:0;display:flex;flex-direction:column;gap:10px}
-.compose-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.inp{background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);color:var(--t1);font-family:'Geist',sans-serif;font-size:13px;padding:10px 13px;outline:none;transition:.2s;width:100%}
-.inp:focus{border-color:var(--accent)}
-.inp::placeholder{color:var(--t3)}
-textarea.inp{resize:none;min-height:56px;line-height:1.5}
-.compose-row{display:flex;gap:8px;align-items:flex-end}
-.compose-row textarea{flex:1}
-.btn{background:var(--accent);color:#fff;border:none;border-radius:var(--rs);padding:9px 16px;font-family:'Geist',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:6px}
-.btn:active{opacity:.8;transform:scale(.97)}
-.btn.ghost{background:transparent;border:1px solid var(--b2);color:var(--t2)}
-.btn.ghost:hover{border-color:var(--b3);color:var(--t1)}
-.btn.sm{padding:7px 12px;font-size:12px}
-
-@media(max-width:600px) { .compose-meta { grid-template-columns: 1fr; } }
-
-/* DROP ZONE */
-.drop-zone{border:2px dashed var(--b2);border-radius:var(--r);padding:22px 20px;text-align:center;cursor:pointer;transition:.2s;position:relative}
-.drop-zone:hover,.drop-zone.over{border-color:var(--accent);background:var(--accent-dim)}
-.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.drop-icon{width:40px;height:40px;background:var(--s2);border:1px solid var(--b2);border-radius:9px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
-.drop-icon svg{width:20px;height:20px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round}
-.drop-title{font-size:14px;font-weight:500;margin-bottom:3px}
-.drop-sub{font-size:12px;color:var(--t2)}
-@media(max-width:768px) { .drop-zone { display: none; } }
-
-/* PROGRESS */
-.progress-wrap{display:none;align-items:center;gap:10px;padding:10px 14px;background:var(--s1);border-top:1px solid var(--b1)}
-.progress-wrap.show{display:flex}
-.progress-track{flex:1;height:3px;background:var(--s3);border-radius:99px;overflow:hidden}
-.progress-fill{height:100%;background:var(--accent);width:0%;transition:width .2s;border-radius:99px}
-.progress-text{font-size:11px;color:var(--t2);font-family:'Geist Mono',monospace;white-space:nowrap}
-
-/* FEED */
-.feed{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+/* Feed */
+.feed{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:6px;overscroll-behavior:contain}
 .feed::-webkit-scrollbar{width:3px}
 .feed::-webkit-scrollbar-thumb{background:var(--b2);border-radius:99px}
-.msg{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:13px 15px;animation:pop .2s ease}
+.empty-feed{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:48px 24px;text-align:center}
+.empty-icon{width:64px;height:64px;border-radius:18px;background:var(--s1);border:1px solid var(--b1);display:flex;align-items:center;justify-content:center;font-size:28px}
+.empty-feed p{font-size:13px;color:var(--t3);line-height:1.7}
+.empty-feed strong{color:var(--t2)}
+
+/* Bubbles */
+.msg-row{display:flex;flex-direction:column;animation:pop .18s ease}
+.msg-row.mine{align-items:flex-end}
+.msg-row.theirs{align-items:flex-start}
 @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.msg.private{border-color:rgba(109,101,245,.3);background:rgba(109,101,245,.06)}
-.msg.echo{border-color:rgba(62,207,142,.2);background:rgba(62,207,142,.04)}
-.msg-head{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
-.msg-from{font-size:13px;font-weight:600;color:var(--accent)}
-.msg-from.echo-from{color:var(--green)}
-.msg-tag{font-size:10px;padding:2px 7px;border-radius:99px;font-weight:500}
-.msg-tag.priv{background:rgba(109,101,245,.2);color:var(--accent)}
-.msg-tag.broad{background:var(--s3);color:var(--t3)}
-.msg-time{font-size:11px;color:var(--t3);font-family:'Geist Mono',monospace;margin-left:auto}
-.msg-subject{font-size:14px;font-weight:600;margin-bottom:3px}
-.msg-desc{font-size:13px;color:var(--t2);margin-bottom:10px;line-height:1.5}
-.msg-text{font-size:14px;line-height:1.6}
-.file-grid{display:flex;flex-direction:column;gap:6px;margin-top:8px}
-.file-card{display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:var(--rs);border:1px solid var(--b1);overflow:hidden}
-.file-thumb{width:52px;height:52px;object-fit:cover;flex-shrink:0;display:block;cursor:zoom-in}
-.file-thumb-icon{width:52px;height:52px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;background:var(--s3);cursor:pointer}
-.file-info{flex:1;min-width:0;padding:0 2px}
-.file-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.file-size{font-size:11px;color:var(--t3);margin-top:2px}
-.file-dl{margin-right:10px}
-.dl-btn{display:flex;align-items:center;gap:4px;background:transparent;border:1px solid var(--b2);border-radius:var(--rxs);padding:5px 10px;font-size:12px;color:var(--t1);text-decoration:none;transition:.15s;font-family:'Geist',sans-serif}
-.dl-btn:hover{background:var(--s3);border-color:var(--b3)}
-.sys-msg{text-align:center;font-size:11px;color:var(--t3);padding:2px 0}
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:10px;padding:32px;text-align:center}
-.empty svg{width:44px;height:44px;opacity:.2;stroke:var(--t1);fill:none;stroke-width:1.5;stroke-linecap:round}
-.empty p{font-size:14px;color:var(--t3)}
+.bubble{max-width:min(440px,78vw);border-radius:var(--r);padding:10px 13px}
+.mine .bubble{background:var(--me-bg);border:1px solid var(--me-bord);border-bottom-right-radius:4px}
+.theirs .bubble{background:var(--them-bg);border:1px solid var(--them-bord);border-bottom-left-radius:4px}
+.bubble.priv{border-color:rgba(79,142,247,.3)!important}
+.mine .bubble.priv{background:rgba(79,142,247,.08)}
+.b-head{display:flex;align-items:baseline;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+.b-from{font-size:12px;font-weight:600;color:var(--a)}
+.b-from.me{color:#5ee8c0}
+.b-priv{font-size:10px;color:var(--blue);background:rgba(79,142,247,.15);padding:1px 6px;border-radius:99px}
+.b-time{font-size:10px;color:var(--t3);font-family:'JetBrains Mono',monospace;margin-left:auto}
+.b-subject{font-size:13px;font-weight:600;margin-bottom:2px}
+.b-desc{font-size:12px;color:var(--t2);margin-bottom:7px;line-height:1.5}
+.b-text{font-size:14px;line-height:1.58}
 
-/* PREVIEW */
-.preview-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:999;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
-.preview-overlay.show{display:flex}
-.preview-inner{position:relative;max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center;gap:12px}
-.preview-inner img,.preview-inner video{max-width:90vw;max-height:78vh;border-radius:10px;object-fit:contain}
-.preview-close{position:absolute;top:-14px;right:-14px;width:32px;height:32px;background:var(--s2);border:1px solid var(--b2);border-radius:50%;cursor:pointer;font-size:16px;color:var(--t1);display:flex;align-items:center;justify-content:center;transition:.15s}
-.preview-close:hover{background:var(--red);border-color:transparent}
-.preview-label{font-size:13px;color:var(--t2);max-width:400px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* File cards */
+.file-list{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.fc{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);border-radius:var(--rs);overflow:hidden}
+.fc-thumb{width:50px;height:50px;object-fit:cover;flex-shrink:0;cursor:zoom-in;display:block}
+.fc-icon{width:50px;height:50px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;background:var(--s3);cursor:pointer}
+.fc-info{flex:1;min-width:0;padding:0 2px}
+.fc-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc-size{font-size:10px;color:var(--t3);margin-top:2px;font-family:'JetBrains Mono',monospace}
+.fc-dl{margin-right:8px;display:flex;align-items:center}
+.xfer-wrap{padding:6px 10px 8px;flex:1}
+.xfer-name{font-size:12px;font-weight:500;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xfer-bar{height:3px;background:var(--s4);border-radius:99px;overflow:hidden}
+.xfer-fill{height:100%;background:var(--blue);border-radius:99px;transition:width .1s}
+.xfer-sub{font-size:10px;color:var(--t3);margin-top:4px;font-family:'JetBrains Mono',monospace}
+.dl-btn{display:flex;align-items:center;gap:4px;background:var(--a-dim);border:1px solid rgba(0,229,176,.18);border-radius:var(--rxs);padding:5px 10px;font-size:11px;color:var(--a);text-decoration:none;font-family:'Sora',sans-serif;cursor:pointer;transition:.15s;white-space:nowrap}
+.dl-btn:hover{background:rgba(0,229,176,.15)}
+.sys-msg{text-align:center;font-size:11px;color:var(--t3);padding:2px 0;font-style:italic}
 
-/* ACTIVITY */
-.activity{padding:14px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;flex:1}
-.act-item{display:flex;align-items:flex-start;gap:8px;padding:7px 9px;border-radius:var(--rs);border:1px solid var(--b1)}
-.act-dot{width:6px;height:6px;border-radius:50%;background:var(--green);margin-top:5px;flex-shrink:0}
-.act-text{font-size:12px;color:var(--t2);line-height:1.5;flex:1}
-.act-time{font-size:10px;color:var(--t3);font-family:'Geist Mono',monospace;white-space:nowrap}
+/* Compose */
+.compose{border-top:1px solid var(--b1);background:var(--s1);flex-shrink:0;padding-bottom:var(--safe-b)}
+.target-bar{display:flex;align-items:center;gap:8px;padding:7px 14px 6px;font-size:12px;border-bottom:1px solid var(--b1)}
+.target-bar .lbl{color:var(--t2)}
+.t-chip{display:flex;align-items:center;gap:5px;background:var(--a-dim);border:1px solid rgba(0,229,176,.22);border-radius:99px;padding:3px 10px 3px 8px;font-size:12px;font-weight:500;color:var(--a)}
+.t-chip button{background:none;border:none;color:var(--a);cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 3px}
+.bcast-lbl{color:var(--t3);display:flex;align-items:center;gap:5px}
+.meta-wrap{display:none;flex-direction:column;gap:5px;padding:8px 12px 0}
+.meta-wrap.open{display:flex}
+.inp{background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);color:var(--t1);font-family:'Sora',sans-serif;font-size:13px;padding:8px 11px;outline:none;transition:.2s;width:100%}
+.inp:focus{border-color:rgba(0,229,176,.4)}
+.inp::placeholder{color:var(--t3)}
+.compose-row{display:flex;align-items:flex-end;gap:6px;padding:8px 10px 10px}
+.compose-row textarea{flex:1;background:var(--s2);border:1px solid var(--b2);border-radius:20px;color:var(--t1);font-family:'Sora',sans-serif;font-size:14px;padding:10px 14px;outline:none;resize:none;line-height:1.45;max-height:130px;overflow-y:auto;transition:.2s}
+.compose-row textarea:focus{border-color:rgba(0,229,176,.4)}
+.compose-row textarea::placeholder{color:var(--t3)}
+.cbtns{display:flex;gap:5px;align-items:flex-end;padding-bottom:1px}
+.rb{width:40px;height:40px;border-radius:50%;border:none;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.rb:active{transform:scale(.88)}
+.rb.meta-btn{background:var(--s3);border:1px solid var(--b2);color:var(--t2);font-size:16px}
+.rb.meta-btn:hover{background:var(--s4);color:var(--t1)}
+.rb.attach{background:var(--s3);border:1px solid var(--b2);color:var(--t2);position:relative;overflow:hidden}
+.rb.attach:hover{background:var(--s4);color:var(--t1)}
+.rb.attach input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.rb.send{background:var(--a);color:#000;box-shadow:0 0 14px var(--a-glow)}
+.rb.send:hover{filter:brightness(1.1)}
+.rb.send:disabled{background:var(--s3);color:var(--t3);box-shadow:none;cursor:default}
+.rb svg{width:17px;height:17px;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;fill:none;pointer-events:none}
+.rb.send svg{margin-left:2px}
 
-/* MODALS */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
-.modal-bg.show{display:flex}
-.modal{background:var(--s1);border:1px solid var(--b2);border-radius:var(--r);padding:24px;width:320px;display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow-y:auto;}
-.modal h3{font-size:16px;font-weight:600}
-.modal p{font-size:13px;color:var(--t2);line-height:1.5}
+/* Global xfer bar */
+.xfer-global{display:none;align-items:center;gap:8px;padding:6px 14px;background:var(--s2);border-top:1px solid var(--b1)}
+.xfer-global.show{display:flex}
+.xg-track{flex:1;height:2px;background:var(--s3);border-radius:99px;overflow:hidden}
+.xg-fill{height:100%;background:var(--a);border-radius:99px;transition:width .1s}
+.xg-txt{font-size:11px;color:var(--t2);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+
+/* Drag overlay */
+.drag-overlay{display:none;position:fixed;inset:0;z-index:990;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center}
+.drag-overlay.show{display:flex}
+.drag-box{border:2px dashed rgba(0,229,176,.45);border-radius:24px;padding:56px 72px;text-align:center;background:rgba(0,229,176,.05);animation:pulse 1.5s ease infinite}
+@keyframes pulse{0%,100%{border-color:rgba(0,229,176,.45)}50%{border-color:rgba(0,229,176,.8)}}
+.drag-box .di{font-size:42px;margin-bottom:12px}
+.drag-box p{font-size:17px;font-weight:600;color:var(--t1)}
+.drag-box span{font-size:13px;color:var(--t2)}
+
+/* Preview */
+.prev-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:900;align-items:center;justify-content:center;backdrop-filter:blur(12px)}
+.prev-ov.show{display:flex}
+.prev-inner{position:relative;max-width:92vw;max-height:90dvh;display:flex;flex-direction:column;align-items:center;gap:10px}
+.prev-inner img,.prev-inner video{max-width:92vw;max-height:80dvh;border-radius:14px;object-fit:contain}
+.prev-close{position:absolute;top:-18px;right:-18px;width:36px;height:36px;background:var(--s2);border:1px solid var(--b3);border-radius:50%;cursor:pointer;font-size:16px;color:var(--t1);display:flex;align-items:center;justify-content:center;transition:.15s}
+.prev-close:hover{background:var(--red);border-color:transparent}
+.prev-lbl{font-size:12px;color:var(--t2);max-width:380px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Offline QR scan modal */
+.scan-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:800;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.scan-modal-bg.show{display:flex}
+.scan-modal{background:var(--s1);border:1px solid var(--b2);border-radius:var(--r);padding:24px;width:min(380px,94vw);display:flex;flex-direction:column;gap:14px}
+.scan-modal h3{font-size:16px;font-weight:700}
+.scan-modal p{font-size:13px;color:var(--t2);line-height:1.5}
+.scan-video-wrap{width:100%;aspect-ratio:1;background:#000;border-radius:var(--rs);overflow:hidden;position:relative}
+.scan-video-wrap video{width:100%;height:100%;object-fit:cover}
+.scan-video-wrap canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0}
+.scan-manual{display:flex;flex-direction:column;gap:8px}
+.scan-manual textarea{background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);color:var(--t1);font-family:'JetBrains Mono',monospace;font-size:11px;padding:10px;outline:none;resize:vertical;min-height:80px;width:100%}
+.scan-manual textarea:focus{border-color:rgba(0,229,176,.4)}
 .modal-btns{display:flex;gap:8px;justify-content:flex-end}
+.btn{background:var(--a);color:#000;border:none;border-radius:var(--rs);padding:9px 16px;font-family:'Sora',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+.btn:active{opacity:.8}
+.btn.ghost{background:transparent;border:1px solid var(--b2);color:var(--t2)}
+.btn.ghost:hover{color:var(--t1);border-color:var(--b3)}
+.btn.sm{padding:7px 13px;font-size:12px}
+.btn:disabled{opacity:.4;cursor:default}
 
-/* LOADING */
-#loadingScreen{display:flex;align-items:center;justify-content:center;flex:1;flex-direction:column;gap:16px}
-.loading-logo{display:flex;align-items:center;gap:10px;font-size:22px;font-weight:600}
-.loading-logo-sq{width:38px;height:38px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center}
-.loading-logo-sq svg{width:20px;height:20px;stroke:white;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.loading-sub{font-size:13px;color:var(--t3)}
-.spinner{width:20px;height:20px;border:2px solid var(--b2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+/* Share sheet */
+.share-ov{display:none;position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center}
+.share-ov.show{display:flex}
+@media(min-width:600px){.share-ov{align-items:center}}
+.share-sheet{background:var(--s1);border:1px solid var(--b2);border-radius:20px 20px 0 0;width:100%;max-width:500px;padding:22px 20px calc(22px + var(--safe-b));animation:slideUp .24s cubic-bezier(.4,0,.2,1)}
+@media(min-width:600px){.share-sheet{border-radius:20px;padding:26px}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+.ss-title{font-size:16px;font-weight:700;margin-bottom:4px}
+.ss-url{font-size:11px;color:var(--t2);font-family:'JetBrains Mono',monospace;word-break:break-all;margin-bottom:16px;padding:8px 10px;background:var(--s2);border-radius:var(--rxs);border:1px solid var(--b1)}
+.ss-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-bottom:18px}
+.ss-item{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border-radius:var(--rs);background:var(--s2);border:1px solid var(--b1);cursor:pointer;transition:.15s;font-size:11px;font-weight:500;color:var(--t2);font-family:'Sora',sans-serif}
+.ss-item:hover{background:var(--s3);border-color:var(--b2);color:var(--t1)}
+.ss-item:active{transform:scale(.93)}
+.ss-item .si{font-size:22px}
+.ss-close{margin-top:14px;width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:var(--rs);padding:12px;font-family:'Sora',sans-serif;font-size:14px;font-weight:500;color:var(--t1);cursor:pointer;transition:.15s}
+.ss-close:hover{background:var(--s3)}
+
+/* Name modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:700;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-bg.show{display:flex}
+.modal{background:var(--s1);border:1px solid var(--b2);border-radius:var(--r);padding:24px;width:min(320px,90vw);display:flex;flex-direction:column;gap:14px}
+.modal h3{font-size:16px;font-weight:700}
+.modal p{font-size:13px;color:var(--t2);line-height:1.5}
+
+/* Mobile */
+@media(max-width:768px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:min(290px,88vw);transform:translateX(-105%);box-shadow:6px 0 40px rgba(0,0,0,.6)}
+  .sidebar.open{transform:none}
+  .sb-backdrop{display:none;position:fixed;inset:0;z-index:79;background:rgba(0,0,0,.5)}
+  .sb-backdrop.show{display:block}
+  .hamburger{display:flex}
+  .qr-frame{width:130px;height:130px}
+}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:99px}
 </style>
 </head>
 <body>
 
-<div id="loadingScreen">
-  <div class="loading-logo">
-    <div class="loading-logo-sq">
-      <svg viewBox="0 0 20 20"><path d="M10 3v10M10 3L7 6M10 3l3 3"/><path d="M4 14v2a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
-    </div>
-    Droply
-  </div>
-  <div class="spinner" id="bootSpinner"></div>
-  <div class="loading-sub" id="bootText">Detecting your network…</div>
-</div>
-
-<div id="appScreen" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-
-  <div class="topbar">
-    <div class="logo">
-      <div class="logo-sq">
+<div class="app">
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-top">
+      <div class="logo-mark">
         <svg viewBox="0 0 20 20"><path d="M10 3v10M10 3L7 6M10 3l3 3"/><path d="M4 14v2a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
       </div>
-      Droply
-    </div>
-    <div class="topbar-right">
-      <div class="conn-badge"><div class="dot" id="dot"></div><span id="connLabel">connecting</span></div>
-      <div class="topbar-name" id="topbarName" onclick="openNameModal()">set name ✎</div>
-    </div>
-  </div>
-
-  <div class="layout">
-
-    <div class="sidebar-left">
-      <div class="sec">
-        <div class="sec-label" id="joinLabel">Scan to join</div>
-        <div class="qr-box">
-          <div class="qr-frame" id="qrContainer">
-            <img id="qrImg" src="" alt="QR" width="136" height="136"/>
-          </div>
-          <div class="qr-url" id="qrUrl">—</div>
-          <div class="qr-hint" id="qrHint">Anyone who opens this URL on the same WiFi joins automatically</div>
-          <div class="lan-badge" id="lanBadge">LAN ——</div>
-        </div>
-      </div>
-      <div class="sec" style="flex:1">
-        <div class="sec-label">Devices on network</div>
-        <div class="devices" id="devicesList"><div style="font-size:12px;color:var(--t3)">Waiting...</div></div>
+      <span class="logo-name">Droply</span>
+      <div class="sb-top-btns">
+        <button class="ib" onclick="openShare()" title="Share link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </button>
+        <button class="ib" onclick="openNameModal()" title="Change name">✎</button>
       </div>
     </div>
 
-    <div class="panel-mid">
+    <!-- Mode toggle -->
+    <div class="mode-row">
+      <button class="mode-btn active" id="modeLanBtn" onclick="setMode('lan')">📡 LAN</button>
+      <button class="mode-btn" id="modeOffBtn" onclick="setMode('offline')">✈️ Offline</button>
+    </div>
+
+    <!-- Connection state -->
+    <div class="conn-row">
+      <div class="conn-dot" id="connDot"></div>
+      <div class="conn-label" id="connLabel"><strong>Connecting…</strong></div>
+      <div class="room-code" id="roomCode" style="display:none"></div>
+    </div>
+
+    <!-- LAN QR block -->
+    <div class="qr-block" id="lanPanel">
+      <div class="qr-frame">
+        <img id="qrImg" src="" alt="QR" style="opacity:.3"/>
+      </div>
+      <div class="qr-url" id="qrUrl">Loading…</div>
+      <div class="qr-hint">Same WiFi · Scan to join</div>
+      <div class="qr-share-row">
+        <button class="sb-btn primary" onclick="openShare()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share link
+        </button>
+        <button class="sb-btn" onclick="copyLink()">🔗 Copy</button>
+      </div>
+    </div>
+
+    <!-- Offline panel -->
+    <div class="offline-panel" id="offlinePanel">
+      <div class="op-title">✈️ Offline P2P</div>
+      <div class="op-step">No WiFi needed. <strong>Step 1:</strong> One device taps "Create offer" and shows QR. <strong>Step 2:</strong> Other device scans it. <strong>Step 3:</strong> Scan the answer QR back. Done.</div>
+
+      <div id="offlineQrWrap" class="op-qr-wrap" style="display:none">
+        <div id="offlineQrDiv"></div>
+      </div>
+      <div class="op-status" id="offlineStatus" style="display:none"></div>
+
+      <button class="op-btn primary" id="offerBtn" onclick="offlineCreateOffer()">📤 Create offer (I go first)</button>
+      <button class="op-btn" id="scanAnswerBtn" onclick="openScanModal('answer')" style="display:none">📷 Scan answer QR</button>
+      <button class="op-btn" id="scanOfferBtn" onclick="openScanModal('offer')">📷 Scan offer QR (join)</button>
+    </div>
+
+    <div class="devs-label" id="devsLabel">Devices</div>
+    <div class="devs" id="devList"><div class="no-devs">Waiting for devices…</div></div>
+  </aside>
+  <div class="sb-backdrop" id="sbBackdrop" onclick="closeSidebar()"></div>
+
+  <!-- ═══ MAIN ═══ -->
+  <main class="main">
+    <div class="chat-hd">
+      <button class="hamburger" onclick="openSidebar()">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="chat-info">
+        <div class="chat-to" id="chatTo">📡 Everyone on network</div>
+        <div class="chat-sub" id="chatSub">0 devices connected</div>
+      </div>
+      <div class="mode-badge lan" id="modeBadge">LAN</div>
+    </div>
+
+    <div class="feed" id="feed">
+      <div class="empty-feed" id="emptyFeed">
+        <div class="empty-icon">📡</div>
+        <p><strong>No messages yet</strong><br>Drop files anywhere or type below.<br>Everything is direct device-to-device.<br>No data leaves your local network.</p>
+      </div>
+    </div>
+
+    <div class="compose">
       <div class="target-bar">
-        <span class="target-label">Sending to:</span>
-        <div id="targetDisplay"><span class="broadcast-chip">📡 Everyone on network</span></div>
+        <span class="lbl">To:</span>
+        <span id="targetDisplay" class="bcast-lbl">📡 Everyone</span>
       </div>
-
-      <div class="feed" id="feed">
-        <div class="empty" id="emptyState">
-          <svg viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-          <p>Files and messages appear here</p>
-        </div>
+      <div class="xfer-global" id="xferGlobal">
+        <div class="xg-track"><div class="xg-fill" id="xgFill"></div></div>
+        <div class="xg-txt" id="xgTxt">Sending…</div>
       </div>
-
-      <div class="progress-wrap" id="progressWrap">
-        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-        <div class="progress-text" id="progressText">0%</div>
+      <div class="meta-wrap" id="metaWrap">
+        <input class="inp" id="subjectInp" placeholder="Subject (optional)" maxlength="100"/>
+        <input class="inp" id="descInp" placeholder="Description (optional)" maxlength="500"/>
       </div>
-
-      <div class="compose">
-        <div class="compose-meta">
-          <input class="inp" id="subjectInp" placeholder="Subject (optional)" maxlength="100"/>
-          <input class="inp" id="descInp" placeholder="Description (optional)" maxlength="500"/>
-        </div>
-        <div class="compose-row">
-          <textarea class="inp" id="textInp" placeholder="Type a message… (Enter to send)" rows="2" onkeydown="handleKey(event)"></textarea>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <label class="btn ghost sm" style="cursor:pointer;position:relative">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Attach files
-            <input type="file" multiple id="fileInp" onchange="handleFiles(this.files)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%"/>
-          </label>
-          <div style="flex:1"></div>
-          <button class="btn sm" onclick="sendMessage()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            Send
+      <div class="compose-row">
+        <button class="rb meta-btn" onclick="toggleMeta()" title="Add subject">⋯</button>
+        <textarea id="txtInp" placeholder="Message…" rows="1"
+          oninput="onTxtInput(this)" onkeydown="onTxtKey(event)"></textarea>
+        <div class="cbtns">
+          <button class="rb attach" title="Attach files">
+            <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+            <input type="file" multiple id="fileInp" onchange="handleFiles(this.files)"/>
+          </button>
+          <button class="rb send" id="sendBtn" onclick="sendText()" disabled>
+            <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           </button>
         </div>
-        <div class="drop-zone" id="dropZone">
-          <input type="file" multiple onchange="handleFiles(this.files)"/>
-          <div class="drop-icon">
-            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          </div>
-          <div class="drop-title">Drop files here</div>
-          <div class="drop-sub">Images · Videos · Any file up to 2 GB</div>
-        </div>
       </div>
     </div>
+  </main>
+</div>
 
-    <div class="sidebar-right">
-      <div class="sec"><div class="sec-label">Activity log</div></div>
-      <div class="activity" id="activityLog"></div>
+<!-- DRAG OVERLAY -->
+<div class="drag-overlay" id="dragOv">
+  <div class="drag-box">
+    <div class="di">📂</div>
+    <p>Drop to share</p>
+    <span>Direct P2P — nothing stored anywhere</span>
+  </div>
+</div>
+
+<!-- PREVIEW -->
+<div class="prev-ov" id="prevOv" onclick="closePrev(event)">
+  <div class="prev-inner">
+    <button class="prev-close" onclick="closePrev()">✕</button>
+    <div id="prevMedia"></div>
+    <div class="prev-lbl" id="prevLbl"></div>
+  </div>
+</div>
+
+<!-- SCAN MODAL (offline QR handshake) -->
+<div class="scan-modal-bg" id="scanModalBg">
+  <div class="scan-modal">
+    <h3 id="scanModalTitle">Scan QR Code</h3>
+    <p id="scanModalDesc">Point your camera at the QR code shown on the other device.</p>
+    <div class="scan-video-wrap" id="scanVideoWrap">
+      <video id="scanVideo" playsinline autoplay muted></video>
+      <canvas id="scanCanvas"></canvas>
     </div>
-
+    <div class="scan-manual">
+      <p style="font-size:11px;color:var(--t3)">Or paste the connection code manually:</p>
+      <textarea id="scanManualTxt" placeholder="Paste connection code here…"></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn ghost sm" onclick="closeScanModal()">Cancel</button>
+      <button class="btn sm" id="scanConfirmBtn" onclick="confirmScan()">Connect</button>
+    </div>
   </div>
 </div>
 
-<div class="preview-overlay" id="previewOverlay" onclick="closePreview(event)">
-  <div class="preview-inner">
-    <button class="preview-close" onclick="closePreview()">✕</button>
-    <div id="previewMedia"></div>
-    <div class="preview-label" id="previewLabel"></div>
+<!-- SHARE SHEET -->
+<div class="share-ov" id="shareOv" onclick="closeShareBg(event)">
+  <div class="share-sheet">
+    <div class="ss-title">Invite to your room</div>
+    <div class="ss-url" id="ssUrl">Loading…</div>
+    <div class="ss-grid">
+      <div class="ss-item" onclick="copyLink()"><span class="si">🔗</span>Copy link</div>
+      <div class="ss-item" id="nativeBtn" onclick="nativeShare()" style="display:none"><span class="si">⬆️</span>Share…</div>
+      <div class="ss-item" onclick="shareWA()"><span class="si">💬</span>WhatsApp</div>
+      <div class="ss-item" onclick="shareViber()"><span class="si">📳</span>Viber</div>
+      <div class="ss-item" onclick="shareTG()"><span class="si">✈️</span>Telegram</div>
+      <div class="ss-item" onclick="shareSMS()"><span class="si">💬</span>SMS</div>
+    </div>
+    <button class="ss-close" onclick="closeShare()">Done</button>
   </div>
 </div>
 
+<!-- NAME MODAL -->
 <div class="modal-bg" id="nameModal">
   <div class="modal">
     <h3>Your display name</h3>
-    <p>This is how other devices on the network see you.</p>
-    <input class="inp" id="nameInp" placeholder="e.g. Mom's iPhone" maxlength="32" onkeydown="if(event.key==='Enter')saveName()"/>
+    <p>This is how other devices see you on the network.</p>
+    <input class="inp" id="nameInp" placeholder="e.g. Alex's iPhone" maxlength="32"
+      onkeydown="if(event.key==='Enter')saveName()"/>
     <div class="modal-btns">
       <button class="btn ghost sm" onclick="closeNameModal()">Cancel</button>
       <button class="btn sm" onclick="saveName()">Save</button>
@@ -311,501 +474,833 @@ textarea.inp{resize:none;min-height:56px;line-height:1.5}
   </div>
 </div>
 
-<div class="modal-bg" id="offlineModal">
-  <div class="modal" style="width: 360px">
-    <h3>📡 Direct P2P Link</h3>
-    <p id="p2pInstructions">Step 1: Show this to your friend, or scan their screen to link directly without Wi-Fi.</p>
-    
-    <div id="p2pQRWrap" style="text-align: center; margin: 10px 0;">
-        <div id="p2pQR" style="display:inline-block; background: white; padding: 10px; border-radius: 8px;"></div>
-    </div>
-
-    <button id="p2pScanBtn" class="btn" style="width: 100%; justify-content: center" onclick="startScanner()">📸 Scan Friend's QR</button>
-    <video id="scannerVideo" playsinline style="display:none; width: 100%; border-radius: 8px; transform: scaleX(-1); margin-top: 10px;"></video>
-
-    <div class="modal-btns" style="margin-top: 10px;">
-      <button class="btn ghost sm" onclick="closeOfflineModal()">Cancel</button>
-    </div>
-  </div>
-</div>
-
 <script>
-// ── Background Offline Service Worker Hook ──────────────────────────────────────
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration skipped', err));
-}
+'use strict';
 
-let ws, myId, myName = '', targetId = null, currentRoom = '';
-const deviceType = /Mobi|Android/i.test(navigator.userAgent) ? 'phone' : /iPad/i.test(navigator.userAgent) ? 'tablet' : 'desktop';
-const dot = document.getElementById('dot');
+// ══════════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════════
+let ws         = null;
+let myId       = null;
+let myRoom     = null;
+let myName     = localStorage.getItem('droply_name') || '';
+let targetId   = null;
+let targetName = '';
+let networkUrl = '';
+let peers      = {};
+let rtcConns   = {};   // peerId → RTCPeerConnection
+let dataChans  = {};   // peerId → RTCDataChannel
+let recvState  = {};   // peerId → { name, size, mime, bufs[], received, cardEl }
+let currentMode = 'lan'; // 'lan' | 'offline'
 
-// ── Added: Offline WebRTC Engine Flags ─────────────────────────────────────────
-let isOfflineMode = false;
-let p2pPeer = null;
-let p2pChannel = null;
-let p2pScanner = null;
-let incomingFileChunks = [];
-let incomingFileMeta = null;
+// Offline P2P state
+let offlinePC      = null;  // the one RTCPeerConnection used in offline mode
+let offlineDC      = null;  // its data channel
+let offlineRole    = null;  // 'offerer' | 'answerer'
+let scanModalRole  = null;  // what we're scanning for
 
-// ── Boot: fetch room from server based on our IP, FALLBACK TO OFFLINE ─────────
-async function boot() {
-  const saved = localStorage.getItem('droply_name');
-  if (saved) { myName = saved; document.getElementById('topbarName').textContent = saved + ' ✎'; }
+const deviceType = /Mobi|Android/i.test(navigator.userAgent) ? 'phone'
+                 : /iPad|Tablet/i.test(navigator.userAgent)  ? 'tablet' : 'desktop';
 
-  try {
-    const res = await fetch('/api/room');
-    if (!res.ok) throw new Error("Server error");
-    const data = await res.json();
-    currentRoom = data.room;
-    document.getElementById('qrImg').src = data.qr;
-    document.getElementById('qrUrl').textContent = data.url;
-    document.getElementById('lanBadge').textContent = 'LAN ' + currentRoom;
+// LAN: use Google STUN for NAT traversal on local networks
+// Offline: no STUN (no internet) — relies on direct link-local
+const RTC_LAN_CFG = {
+  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+};
+const RTC_OFFLINE_CFG = {
+  iceServers: [] // no external servers — pure local
+};
 
-    document.getElementById('loadingScreen').style.display = 'none';
-    document.getElementById('appScreen').style.display = 'flex';
+const CHUNK = 64 * 1024; // 64 KB streaming chunks
 
-    connect();
-  } catch(e) {
-    // ── The Smart Fallback: if server unreachable, init WebRTC ──
-    document.getElementById('bootSpinner').style.display = 'none';
-    document.getElementById('bootText').textContent = 'No network detected. Loading P2P mode...';
-    setTimeout(initOfflineMode, 1000);
-  }
-}
+// ══════════════════════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════════════════════
+const esc  = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmt  = ts => new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+const fmtB = b  => b<1024?b+'B':b<1048576?(b/1024).toFixed(1)+'KB':b<1073741824?(b/1048576).toFixed(1)+'MB':(b/1073741824).toFixed(2)+'GB';
+const mk   = cls => { const d=document.createElement('div'); d.className=cls; return d; };
+const $    = id  => document.getElementById(id);
 
-// ── WebSocket (Online Engine) ──────────────────────────────────────────────────
-function connect() {
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  ws = new WebSocket(`${proto}://${location.host}?room=${currentRoom}`);
+// ══════════════════════════════════════════════════════════════════
+//  MODE SWITCH
+// ══════════════════════════════════════════════════════════════════
+function setMode(mode) {
+  currentMode = mode;
+  $('modeLanBtn').classList.toggle('active', mode === 'lan');
+  $('modeOffBtn').classList.toggle('active', mode === 'offline');
+  $('lanPanel').style.display    = mode === 'lan'     ? '' : 'none';
+  $('offlinePanel').classList.toggle('show', mode === 'offline');
 
-  ws.onopen = () => {
-    dot.classList.add('on');
-    document.getElementById('connLabel').textContent = 'connected';
-    identify();
-  };
-
-  ws.onmessage = e => {
-    const m = JSON.parse(e.data);
-    if      (m.type === 'welcome')  { myId = m.id; identify(); }
-    else if (m.type === 'clients')  renderDevices(m.clients);
-    else if (m.type === 'files')    renderFileMsg(m);
-    else if (m.type === 'message')  renderTextMsg(m);
-    else if (m.type === 'system')   renderSystem(m.text);
-    else if (m.type === 'error')    handleError(m);
-  };
-
-  ws.onclose = () => {
-    if(!isOfflineMode) {
-      dot.classList.remove('on');
-      document.getElementById('connLabel').textContent = 'reconnecting…';
-      setTimeout(connect, 2000);
-    }
-  };
-}
-
-function identify() {
-  if (ws?.readyState === 1)
-    ws.send(JSON.stringify({ type: 'identify', name: myName || `Device-${myId}`, deviceType }));
-}
-
-function handleError(m) {
-  if (m.code === 'BLOCKED') {
-    document.getElementById('appScreen').innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;text-align:center;padding:24px"><div style="font-size:40px">🚫</div><div style="font-size:20px;font-weight:600">You've been blocked</div><div style="font-size:14px;color:var(--t2)">The host removed you from this session.</div></div>`;
-  }
-}
-
-// ── Added: WebRTC Offline Engine Logic ─────────────────────────────────────────
-function initOfflineMode() {
-  isOfflineMode = true;
-  document.getElementById('loadingScreen').style.display = 'none';
-  document.getElementById('appScreen').style.display = 'flex';
-  
-  dot.className = 'dot offline';
-  document.getElementById('connLabel').textContent = 'offline mode';
-  document.getElementById('lanBadge').textContent = 'NO WI-FI';
-  document.getElementById('joinLabel').textContent = 'P2P Handshake';
-  
-  // Replace standard QR code with P2P Setup trigger
-  const qrFrame = document.getElementById('qrContainer');
-  qrFrame.style.background = 'transparent';
-  qrFrame.style.height = 'auto';
-  qrFrame.innerHTML = `<button class="btn" style="width:100%; justify-content:center; background:#3b82f6" onclick="openOfflineModal()">🔗 Link Device</button>`;
-  document.getElementById('qrUrl').textContent = 'Offline Direct Mode';
-  document.getElementById('qrHint').textContent = 'Tap to link with a nearby phone via camera';
-  
-  document.getElementById('devicesList').innerHTML = `<div style="font-size:12px;color:var(--t3)">Ready to link directly.</div>`;
-  renderSystem('Started Offline P2P Mode. Click "Link Device" to begin.');
-}
-
-function openOfflineModal() {
-  document.getElementById('offlineModal').classList.add('show');
-  
-  // Initialize Strict Offline Connection
-  p2pPeer = new RTCPeerConnection({ iceServers: [] });
-  
-  // 1. Device A sets up the highway
-  p2pChannel = p2pPeer.createDataChannel('droply-offline-pipe');
-  bindP2PChannel(p2pChannel);
-  
-  // 2. Device B catches incoming highway
-  p2pPeer.ondatachannel = (e) => {
-    p2pChannel = e.channel;
-    bindP2PChannel(p2pChannel);
-  };
-
-  // 3. Build token QR only after all local ICE properties are gathered
-  p2pPeer.onicecandidate = (e) => {
-    if (!e.candidate) {
-       const token = btoa(JSON.stringify(p2pPeer.localDescription));
-       document.getElementById('p2pQR').innerHTML = "";
-       new QRCode(document.getElementById("p2pQR"), { text: token, width: 140, height: 140 });
-    }
-  };
-
-  // Generate Offer
-  p2pPeer.createOffer().then(o => p2pPeer.setLocalDescription(o)).catch(console.error);
-}
-
-function closeOfflineModal() {
-  document.getElementById('offlineModal').classList.remove('show');
-  if(p2pScanner) { p2pScanner.stop(); document.getElementById('scannerVideo').style.display = 'none'; }
-}
-
-function startScanner() {
-  const video = document.getElementById('scannerVideo');
-  video.style.display = 'block';
-  document.getElementById('p2pScanBtn').style.display = 'none';
-  
-  p2pScanner = new Html5Qrcode("scannerVideo");
-  p2pScanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (text) => {
-    p2pScanner.stop();
-    video.style.display = 'none';
-    
-    // Decrypt Friend's QR token
-    const remoteDesc = JSON.parse(atob(text));
-    p2pPeer.setRemoteDescription(new RTCSessionDescription(remoteDesc));
-    
-    if (remoteDesc.type === 'offer') {
-      p2pPeer.createAnswer().then(a => p2pPeer.setLocalDescription(a));
-      document.getElementById('p2pInstructions').textContent = "✅ Scanned! Now let them scan YOUR screen below:";
-      document.getElementById('p2pScanBtn').style.display = 'flex';
-    } else if (remoteDesc.type === 'answer') {
-      closeOfflineModal(); // Connection established instantly
-    }
-  }).catch(console.error);
-}
-
-function bindP2PChannel(channel) {
-  channel.onopen = () => {
-    closeOfflineModal();
-    dot.className = 'dot on';
-    document.getElementById('connLabel').textContent = 'P2P Tunnel Active';
-    document.getElementById('targetDisplay').innerHTML = `<span class="broadcast-chip" style="color:var(--accent)">🔗 Direct Connection Locked</span>`;
-    document.getElementById('devicesList').innerHTML = `<div class="dev me"><div class="dev-av desktop">P</div><div class="dev-info"><div class="dev-name">Connected Peer</div><div class="dev-type">Direct Radio Link</div></div></div>`;
-    renderSystem('⚡ P2P Direct Tunnel Established! You can now send files without Wi-Fi.');
-  };
-
-  channel.onmessage = async (e) => {
-    // String means metadata or text message
-    if (typeof e.data === 'string') {
-      const msg = JSON.parse(e.data);
-      if (msg.type === 'message') {
-        renderTextMsg({ fromName: 'Peer', private: true, echo: false, time: Date.now(), text: msg.text, subject: msg.subject, description: msg.description });
-      } else if (msg.type === 'fileStart') {
-        incomingFileChunks = [];
-        incomingFileMeta = msg;
-        document.getElementById('progressWrap').classList.add('show');
-      } else if (msg.type === 'fileEnd') {
-        const blob = new Blob(incomingFileChunks, { type: incomingFileMeta.fileType });
-        const url = URL.createObjectURL(blob);
-        renderFileMsg({ fromName: 'Peer', private: true, echo: false, time: Date.now(), files: [{ name: incomingFileMeta.name, size: incomingFileMeta.size, url: url }] });
-        document.getElementById('progressWrap').classList.remove('show');
-        incomingFileChunks = [];
-      }
-    } else {
-      // ArrayBuffer means file chunks
-      incomingFileChunks.push(e.data);
-      if (incomingFileMeta) {
-        const currentBytes = incomingFileChunks.reduce((acc, c) => acc + c.byteLength, 0);
-        const p = Math.round((currentBytes / incomingFileMeta.size) * 100);
-        document.getElementById('progressFill').style.width = p + '%';
-        document.getElementById('progressText').textContent = 'Receiving ' + p + '%';
-      }
-    }
-  };
-}
-
-// ── Devices & Targeting ─────────────────────────────────────────────────────────
-function renderDevices(clients) {
-  const list = document.getElementById('devicesList');
-  document.getElementById('connLabel').textContent = `${clients.length} device${clients.length !== 1 ? 's' : ''}`;
-  list.innerHTML = clients.map(c => {
-    const isMe = c.id === myId;
-    const av = (c.name || 'D')[0].toUpperCase();
-    return `<div class="dev${isMe?' me':''}${targetId===c.id?' selected':''}">
-      <div class="dev-av ${c.deviceType}">${av}</div>
-      <div class="dev-info">
-        <div class="dev-name">${esc(c.name)}</div>
-        <div class="dev-type">${c.deviceType}</div>
-      </div>
-      ${isMe ? '<span class="me-tag">you</span>' : `<div class="dev-actions">
-        <button class="btn-icon" title="Send privately" onclick="selectTarget('${c.id}','${esc(c.name)}')">✉</button>
-        <button class="btn-icon danger" title="Block" onclick="blockDevice('${c.id}','${esc(c.name)}')">🚫</button>
-      </div>`}
-    </div>`;
-  }).join('');
-}
-
-function selectTarget(id, name) {
-  targetId = id;
-  document.getElementById('targetDisplay').innerHTML = `<div class="target-chip">🔏 ${esc(name)} <button onclick="clearTarget()">✕</button></div>`;
-  logActivity(`Sending privately to ${name}`);
-}
-function clearTarget() {
-  targetId = null;
-  document.getElementById('targetDisplay').innerHTML = `<span class="broadcast-chip">📡 Everyone on network</span>`;
-}
-function blockDevice(id, name) {
-  if (!confirm(`Block "${name}"?`)) return;
-  ws.send(JSON.stringify({ type: 'block', targetId: id }));
-  logActivity(`Blocked ${name}`);
-}
-
-// ── Send Logic (Modified for Offline Fallback) ────────────────────────────────
-function handleKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-}
-
-function sendMessage() {
-  const subject = document.getElementById('subjectInp').value.trim();
-  const description = document.getElementById('descInp').value.trim();
-  const text = document.getElementById('textInp').value.trim();
-  if (!text && !subject && !description) return;
-  
-  if (isOfflineMode) {
-    if (!p2pChannel || p2pChannel.readyState !== 'open') return alert("Link a device first!");
-    p2pChannel.send(JSON.stringify({ type: 'message', subject, description, text }));
-    renderTextMsg({ fromName: myName || 'Me', echo: true, private: true, time: Date.now(), text, subject, description });
+  const badge = $('modeBadge');
+  if (mode === 'lan') {
+    badge.className = 'mode-badge lan';
+    badge.textContent = 'LAN';
+    $('chatTo').textContent = '📡 Everyone on network';
   } else {
-    ws.send(JSON.stringify({ type: 'message', subject, description, text, toId: targetId || undefined }));
+    badge.className = 'mode-badge offline-badge';
+    badge.textContent = 'Offline';
+    $('chatTo').textContent = '✈️ Offline P2P';
+    $('chatSub').textContent = 'No WiFi needed';
   }
-  
-  document.getElementById('textInp').value = '';
 }
 
-async function handleFiles(files) {
-  if (!files?.length) return;
-  
-  if (isOfflineMode) {
-    if (!p2pChannel || p2pChannel.readyState !== 'open') return alert("Link a device first!");
-    for (const f of files) await sendFileP2P(f);
-    document.getElementById('fileInp').value = '';
+// ══════════════════════════════════════════════════════════════════
+//  LAN MODE — WebSocket signalling
+// ══════════════════════════════════════════════════════════════════
+function connect() {
+  // Only run in LAN mode; if server not available, just skip gracefully
+  try {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(`${proto}://${location.host}`);
+    ws.onopen  = () => { setConn('on','Connected'); identify(); loadQR(); };
+    ws.onmessage = ({ data }) => {
+      let m; try { m = JSON.parse(data); } catch { return; }
+      switch (m.type) {
+        case 'welcome':      onWelcome(m);     break;
+        case 'peers':        onPeers(m);       break;
+        case 'peer-joined':  onPeerJoined(m);  break;
+        case 'peer-updated': onPeerUpdated(m); break;
+        case 'peer-left':    onPeerLeft(m);    break;
+        case 'chat':         onChat(m);        break;
+        case 'error':        onSrvError(m);    break;
+        case 'rtc-offer':    onOffer(m);       break;
+        case 'rtc-answer':   onAnswer(m);      break;
+        case 'rtc-ice':      onIce(m);         break;
+      }
+    };
+    ws.onclose = () => {
+      setConn('','Reconnecting…');
+      Object.keys(rtcConns).forEach(closeLANPeer);
+      setTimeout(connect, 3000);
+    };
+    ws.onerror = () => ws.close();
+  } catch(e) {
+    setConn('offline','No server — use Offline mode');
+  }
+}
+
+function sig(obj) { if (ws?.readyState === 1) ws.send(JSON.stringify(obj)); }
+
+function onWelcome(m) {
+  myId = m.id; myRoom = m.room;
+  $('roomCode').textContent = m.room;
+  $('roomCode').style.display = 'block';
+  identify();
+  (m.peers || []).forEach(p => { peers[p.id] = p; initLANRTC(p.id, true); });
+  renderDevices();
+}
+
+function onPeers(m) {
+  const newMap = {};
+  m.peers.forEach(p => { newMap[p.id] = p; });
+  Object.keys(peers).forEach(id => { if (!newMap[id]) closeLANPeer(id); });
+  m.peers.forEach(p => { if (!peers[p.id] && p.id !== myId) initLANRTC(p.id, true); });
+  peers = newMap;
+  renderDevices();
+  const count = Object.values(peers).filter(p=>p.id!==myId).length;
+  $('chatSub').textContent = `${count} device${count!==1?'s':''} connected`;
+}
+
+function onPeerJoined(m) { peers[m.peer.id] = m.peer; sysMsg(`${m.peer.name} joined`); renderDevices(); }
+function onPeerUpdated(m) { if (peers[m.peer.id]) Object.assign(peers[m.peer.id], m.peer); renderDevices(); }
+function onPeerLeft(m) {
+  const name = peers[m.id]?.name || m.name || 'A device';
+  closeLANPeer(m.id); delete peers[m.id];
+  sysMsg(`${name} left`); renderDevices();
+  if (targetId === m.id) clearTarget();
+}
+function onChat(m) { renderText(m); }
+
+function onSrvError(m) {
+  if (m.code === 'NOT_LOCAL') {
+    // Not on LAN — switch to offline mode automatically
+    setMode('offline');
+    setConn('offline','Not on LAN — use Offline mode');
     return;
   }
+  if (m.code === 'BLOCKED') {
+    document.body.innerHTML = `<div style="display:flex;height:100dvh;align-items:center;justify-content:center;text-align:center;padding:24px;background:#0e1117;color:#eef0f4;font-family:sans-serif;flex-direction:column;gap:12px"><div style="font-size:42px">🚫</div><div style="font-size:18px;font-weight:700">You have been blocked from this room.</div></div>`;
+  }
+}
 
-  // Original Online File Upload Logic
-  const subject = document.getElementById('subjectInp').value.trim();
-  const description = document.getElementById('descInp').value.trim();
+function identify() { sig({ type:'identify', name: myName||`Device-${myId}`, deviceType }); }
 
-  const pw = document.getElementById('progressWrap');
-  const pf = document.getElementById('progressFill');
-  const pt = document.getElementById('progressText');
-  pw.classList.add('show');
+async function loadQR() {
+  try {
+    const r = await fetch('/qr').then(r=>r.json());
+    networkUrl = r.url;
+    const img = $('qrImg'); img.src = r.qr; img.style.opacity = '1';
+    $('qrUrl').textContent = r.url;
+    $('ssUrl').textContent = r.url;
+    if (navigator.share) $('nativeBtn').style.display = 'flex';
+  } catch {}
+}
 
-  const fd = new FormData();
-  for (const f of files) fd.append('files', f);
-  if (subject) fd.append('subject', subject);
-  if (description) fd.append('description', description);
+// ── LAN WebRTC ───────────────────────────────────────────────────
+function initLANRTC(peerId, initiator) {
+  if (rtcConns[peerId]) return;
+  const pc = new RTCPeerConnection(RTC_LAN_CFG);
+  rtcConns[peerId] = pc;
+  if (initiator) { const dc = pc.createDataChannel('droply',{ordered:true}); setupDC(dc, peerId, 'lan'); }
+  pc.ondatachannel = ({ channel }) => setupDC(channel, peerId, 'lan');
+  pc.onicecandidate = ({ candidate }) => { if (candidate) sig({ type:'rtc-ice', toId:peerId, candidate }); };
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === 'connected') { updateBadge(); }
+    if (['disconnected','failed','closed'].includes(pc.connectionState)) closeLANPeer(peerId);
+  };
+  if (initiator) {
+    pc.createOffer()
+      .then(o => pc.setLocalDescription(o))
+      .then(() => sig({ type:'rtc-offer', toId:peerId, offer:pc.localDescription }))
+      .catch(console.error);
+  }
+  return pc;
+}
 
-  return new Promise((resolve) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', `/upload?room=${currentRoom}&fromId=${myId}${targetId ? '&toId=' + targetId : ''}`);
-    xhr.upload.onprogress = e => {
-      if (e.lengthComputable) {
-        const p = Math.round(e.loaded / e.total * 100);
-        pf.style.width = p + '%'; pt.textContent = p + '%';
-      }
+async function onOffer(m) {
+  let pc = rtcConns[m.fromId];
+  if (!pc) { pc = initLANRTC(m.fromId, false); }
+  await pc.setRemoteDescription(new RTCSessionDescription(m.offer));
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  sig({ type:'rtc-answer', toId:m.fromId, answer:pc.localDescription });
+}
+async function onAnswer(m) { const pc=rtcConns[m.fromId]; if(pc) await pc.setRemoteDescription(new RTCSessionDescription(m.answer)); }
+async function onIce(m) { const pc=rtcConns[m.fromId]; if(pc&&m.candidate) try{ await pc.addIceCandidate(new RTCIceCandidate(m.candidate)); }catch{} }
+
+function closeLANPeer(pid) {
+  dataChans[pid]?.close(); rtcConns[pid]?.close();
+  delete dataChans[pid]; delete rtcConns[pid]; delete recvState[pid];
+  updateBadge();
+}
+
+function updateBadge() {
+  const connected = Object.values(rtcConns).some(pc=>pc.connectionState==='connected')
+    || (offlinePC?.connectionState === 'connected');
+  const badge = $('modeBadge');
+  if (connected && currentMode === 'lan') {
+    badge.className = 'mode-badge p2p-badge'; badge.textContent = 'P2P';
+  } else if (currentMode === 'lan') {
+    badge.className = 'mode-badge lan'; badge.textContent = 'LAN';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  OFFLINE P2P — manual QR handshake, no server needed
+// ══════════════════════════════════════════════════════════════════
+
+// Step 1 (offerer): create offer, show QR of SDP
+async function offlineCreateOffer() {
+  offlineRole = 'offerer';
+  offlinePC = new RTCPeerConnection(RTC_OFFLINE_CFG);
+  offlineDC = offlinePC.createDataChannel('droply', { ordered: true });
+  setupDC(offlineDC, 'offline', 'offline');
+
+  offlinePC.onicecandidate = () => {}; // we wait for gatheringcomplete
+
+  await offlinePC.createOffer().then(o => offlinePC.setLocalDescription(o));
+
+  // Wait for ICE gathering to finish so we can embed everything in one QR
+  await waitForICEGathering(offlinePC);
+
+  const sdpPayload = JSON.stringify({
+    droply: 1,
+    role:   'offer',
+    sdp:    offlinePC.localDescription
+  });
+
+  showOfflineQR(sdpPayload);
+  setOfflineStatus('waiting', '⏳ Waiting for other device to scan…');
+
+  // Show "scan answer" button
+  $('offerBtn').style.display    = 'none';
+  $('scanAnswerBtn').style.display = '';
+  $('scanOfferBtn').style.display  = 'none';
+}
+
+// Step 2 (answerer): receives offer QR, creates answer QR
+async function offlineHandleOffer(offerData) {
+  offlineRole = 'answerer';
+  offlinePC = new RTCPeerConnection(RTC_OFFLINE_CFG);
+  offlinePC.ondatachannel = ({ channel }) => setupDC(channel, 'offline', 'offline');
+  offlinePC.onicecandidate = () => {};
+
+  await offlinePC.setRemoteDescription(new RTCSessionDescription(offerData.sdp));
+  const answer = await offlinePC.createAnswer();
+  await offlinePC.setLocalDescription(answer);
+  await waitForICEGathering(offlinePC);
+
+  const sdpPayload = JSON.stringify({
+    droply: 1,
+    role:   'answer',
+    sdp:    offlinePC.localDescription
+  });
+
+  showOfflineQR(sdpPayload);
+  setOfflineStatus('waiting', '⏳ Show this QR to the other device');
+
+  $('offerBtn').style.display     = 'none';
+  $('scanOfferBtn').style.display = 'none';
+  $('scanAnswerBtn').style.display = 'none';
+
+  offlinePC.onconnectionstatechange = () => {
+    if (offlinePC.connectionState === 'connected') {
+      setOfflineStatus('connected', '✅ Connected! You can now send files.');
+      updateBadge();
+      sysMsg('Offline P2P connected');
+      renderDevices();
+    }
+  };
+}
+
+// Step 3 (offerer): receives answer QR
+async function offlineHandleAnswer(answerData) {
+  if (!offlinePC) return;
+  await offlinePC.setRemoteDescription(new RTCSessionDescription(answerData.sdp));
+  setOfflineStatus('waiting', '🔄 Connecting…');
+
+  offlinePC.onconnectionstatechange = () => {
+    if (offlinePC.connectionState === 'connected') {
+      setOfflineStatus('connected', '✅ Connected! You can now send files.');
+      updateBadge();
+      sysMsg('Offline P2P connected');
+      renderDevices();
+    }
+  };
+}
+
+function waitForICEGathering(pc) {
+  return new Promise(resolve => {
+    if (pc.iceGatheringState === 'complete') { resolve(); return; }
+    pc.onicegatheringstatechange = () => {
+      if (pc.iceGatheringState === 'complete') resolve();
     };
-    xhr.onload = () => {
-      setTimeout(() => { pw.classList.remove('show'); pf.style.width = '0%'; }, 800);
-      document.getElementById('fileInp').value = '';
-      resolve();
-    };
-    xhr.onerror = () => { pw.classList.remove('show'); resolve(); };
-    xhr.send(fd);
+    // Fallback timeout — local ICE usually gathers in < 2s
+    setTimeout(resolve, 3000);
   });
 }
 
-// ── Added: Offline P2P Chunking Sender ────────────────────────────────────────
-async function sendFileP2P(file) {
-  const pw = document.getElementById('progressWrap');
-  const pf = document.getElementById('progressFill');
-  const pt = document.getElementById('progressText');
-  pw.classList.add('show');
+function showOfflineQR(text) {
+  const wrap = $('offlineQrWrap');
+  wrap.style.display = 'flex';
+  const div = $('offlineQrDiv');
+  div.innerHTML = '';
+  // Use QRCode.js lib
+  try {
+    new QRCode(div, { text, width: 136, height: 136, colorDark:'#000', colorLight:'#fff', correctLevel: QRCode.CorrectLevel.L });
+  } catch(e) {
+    // Fallback: show text
+    div.style.background='#fff'; div.style.padding='8px'; div.style.fontSize='8px'; div.style.wordBreak='break-all'; div.style.color='#000'; div.textContent = text;
+  }
+}
 
-  // Notify peer of incoming file size
-  p2pChannel.send(JSON.stringify({ type: 'fileStart', name: file.name, size: file.size, fileType: file.type }));
+function setOfflineStatus(cls, msg) {
+  const el = $('offlineStatus');
+  el.style.display = '';
+  el.className = 'op-status ' + cls;
+  el.textContent = msg;
+}
 
-  const buffer = await file.arrayBuffer();
-  const chunkSize = 16384; // 16KB WebRTC Safe Limit
+// ── QR Scanner (offline handshake) ───────────────────────────────
+let scanStream = null;
+let scanInterval = null;
+
+function openScanModal(role) {
+  scanModalRole = role;
+  $('scanModalTitle').textContent = role === 'offer' ? 'Scan Offer QR' : 'Scan Answer QR';
+  $('scanModalDesc').textContent  = role === 'offer'
+    ? 'Scan the QR shown on the device that tapped "Create offer".'
+    : 'Scan the answer QR shown on the joining device.';
+  $('scanManualTxt').value = '';
+  $('scanModalBg').classList.add('show');
+  startCamera();
+}
+
+function closeScanModal() {
+  $('scanModalBg').classList.remove('show');
+  stopCamera();
+}
+
+async function startCamera() {
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const video = $('scanVideo');
+    video.srcObject = scanStream;
+    await video.play();
+    startScanLoop();
+  } catch(e) {
+    // Camera denied or not available — user can paste manually
+    $('scanVideoWrap').style.display = 'none';
+  }
+}
+
+function stopCamera() {
+  clearInterval(scanInterval);
+  scanInterval = null;
+  if (scanStream) { scanStream.getTracks().forEach(t=>t.stop()); scanStream = null; }
+  $('scanVideoWrap').style.display = '';
+}
+
+function startScanLoop() {
+  const video  = $('scanVideo');
+  const canvas = $('scanCanvas');
+  const ctx    = canvas.getContext('2d');
+
+  scanInterval = setInterval(() => {
+    if (video.readyState < 2) return;
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    try {
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      // Use jsQR if available (loaded via CDN below), else skip
+      if (window.jsQR) {
+        const code = jsQR(imgData.data, canvas.width, canvas.height);
+        if (code && code.data) {
+          clearInterval(scanInterval);
+          stopCamera();
+          processScannedData(code.data);
+        }
+      }
+    } catch {}
+  }, 200);
+}
+
+async function confirmScan() {
+  const text = $('scanManualTxt').value.trim();
+  if (text) { closeScanModal(); processScannedData(text); }
+}
+
+async function processScannedData(raw) {
+  let data;
+  try { data = JSON.parse(raw); } catch { alert('Invalid QR code — not a Droply handshake.'); return; }
+  if (!data.droply) { alert('Not a Droply QR code.'); return; }
+
+  if (data.role === 'offer' && scanModalRole === 'offer') {
+    await offlineHandleOffer(data);
+  } else if (data.role === 'answer' && scanModalRole === 'answer') {
+    await offlineHandleAnswer(data);
+  } else {
+    alert('Wrong QR type scanned. Make sure you scan the right one.');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  SHARED DATA CHANNEL SETUP (LAN + Offline)
+// ══════════════════════════════════════════════════════════════════
+function setupDC(dc, peerId, mode) {
+  if (mode === 'offline') offlineDC = dc;
+  else dataChans[peerId] = dc;
+  dc.binaryType = 'arraybuffer';
+
+  dc.onopen = () => {
+    updateBadge();
+    if (mode === 'offline') {
+      setOfflineStatus('connected', '✅ Connected!');
+      sysMsg('Offline P2P connected');
+      renderDevices();
+    }
+  };
+
+  dc.onclose = () => {
+    if (mode !== 'offline') delete dataChans[peerId];
+    updateBadge();
+  };
+
+  dc.onmessage = ({ data }) => {
+    const pid = mode === 'offline' ? 'offline-peer' : peerId;
+    if (typeof data === 'string') handleDCText(pid, data, mode);
+    else handleDCChunk(pid, data);
+  };
+}
+
+// ── DC text ───────────────────────────────────────────────────────
+function handleDCText(peerId, raw, mode) {
+  let m; try { m = JSON.parse(raw); } catch { return; }
+  const peerName = mode === 'offline' ? 'Offline Peer'
+    : (peers[peerId]?.name || 'Unknown');
+
+  if (m.type === 'chat') {
+    renderText({ ...m, fromId:peerId, fromName:peerName, echo:false });
+  }
+  if (m.type === 'file-meta') {
+    recvState[peerId] = { name:m.name, size:m.size, mime:m.mime, id:m.id, bufs:[], received:0, cardEl:null };
+    recvState[peerId].cardEl = renderIncomingFile(peerName, m, peerId);
+  }
+  if (m.type === 'file-done') {
+    const s = recvState[peerId];
+    if (!s) return;
+    const blob = new Blob(s.bufs, { type: s.mime || 'application/octet-stream' });
+    const url  = URL.createObjectURL(blob);
+    finaliseFileCard(s.cardEl, s.name, url, blob.size);
+    delete recvState[peerId];
+  }
+}
+
+// ── DC binary chunks ──────────────────────────────────────────────
+function handleDCChunk(peerId, chunk) {
+  const s = recvState[peerId];
+  if (!s) return;
+  s.bufs.push(chunk);
+  s.received += chunk.byteLength;
+  const pct = Math.round(s.received / s.size * 100);
+  if (s.cardEl) {
+    const fill = s.cardEl.querySelector('.xfer-fill');
+    const sub  = s.cardEl.querySelector('.xfer-sub');
+    if (fill) fill.style.width = pct + '%';
+    if (sub)  sub.textContent  = `${fmtB(s.received)} / ${fmtB(s.size)} · ${pct}%`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  SEND
+// ══════════════════════════════════════════════════════════════════
+function sendText() {
+  const sub  = $('subjectInp').value.trim();
+  const desc = $('descInp').value.trim();
+  const text = $('txtInp').value.trim();
+  if (!text && !sub && !desc) return;
+
+  const payload = { type:'chat', subject:sub, description:desc, text, toId:targetId||undefined };
+
+  // LAN: also relay via WS for devices without P2P yet
+  if (currentMode === 'lan') sig(payload);
+
+  // Send over all open data channels
+  const dcMsg = JSON.stringify({ type:'chat', subject:sub, description:desc, text, time:Date.now() });
+  sendToAllDC(dcMsg);
+
+  // Local echo
+  renderText({ ...payload, fromId:myId, fromName:'You', echo:true, private:!!targetId, time:Date.now() });
+  $('txtInp').value = ''; $('txtInp').style.height='auto'; $('sendBtn').disabled=true;
+}
+
+// ── Streaming file send ───────────────────────────────────────────
+// Uses FileReader to stream chunks without loading whole file into RAM first.
+// This means even multi-GB files can be sent without crashing the browser.
+async function handleFiles(files) {
+  if (!files?.length) return;
+  $('fileInp').value = '';
+  const sub  = $('subjectInp').value.trim();
+  const desc = $('descInp').value.trim();
+  for (const file of files) await sendFileStreaming(file, sub, desc);
+}
+
+async function sendFileStreaming(file, subject='', description='') {
+  const fileId  = Math.random().toString(36).slice(2);
+  const targets = getOpenChannels();
+
+  if (!targets.length) { alert('No connected devices to send to.'); return; }
+
+  // Local echo — safe to use createObjectURL since we have the File object
+  const localUrl = URL.createObjectURL(file);
+  renderSentFile(file.name, localUrl, file.size, subject, description);
+
+  const meta = JSON.stringify({
+    type:'file-meta', id:fileId,
+    name:file.name, size:file.size,
+    mime:file.type||'application/octet-stream',
+    subject, description
+  });
+  const done = JSON.stringify({ type:'file-done', id:fileId });
+
+  const xg   = $('xferGlobal');
+  const fill = $('xgFill');
+  const txt  = $('xgTxt');
+  xg.classList.add('show');
+  txt.textContent = `Sending ${file.name}…`;
+  fill.style.width = '0%';
+
+  // Stream file using slice — no full arrayBuffer() load
+  const totalSize = file.size;
   let offset = 0;
 
-  return new Promise((resolve) => {
-    const sendChunk = () => {
-      while (offset < buffer.byteLength) {
-        // Pauses loop temporarily if data channel buffer fills up too quickly (prevents crashing on big files!)
-        if (p2pChannel.bufferedAmount > 1024 * 1024) { 
-          setTimeout(sendChunk, 50); 
-          return; 
-        }
-        p2pChannel.send(buffer.slice(offset, offset + chunkSize));
-        offset += chunkSize;
-        
-        const p = Math.round((offset / buffer.byteLength) * 100);
-        pf.style.width = Math.min(p, 100) + '%';
-        pt.textContent = Math.min(p, 100) + '%';
+  for (const dc of targets) {
+    if (dc.readyState !== 'open') continue;
+    dc.send(meta);
+
+    offset = 0;
+    while (offset < totalSize) {
+      // Backpressure — wait if DC buffer is full (4 MB threshold)
+      while (dc.bufferedAmount > 4 * 1024 * 1024) {
+        await sleep(20);
       }
-      
-      // Finished
-      p2pChannel.send(JSON.stringify({ type: 'fileEnd' }));
-      setTimeout(() => { pw.classList.remove('show'); pf.style.width = '0%'; }, 800);
-      
-      // Render locally on screen
-      renderFileMsg({
-        fromName: myName || 'Me', echo: true, private: true, time: Date.now(),
-        files: [{ name: file.name, size: file.size, url: URL.createObjectURL(file) }]
-      });
-      resolve();
-    };
-    sendChunk();
-  });
+
+      const slice  = file.slice(offset, offset + CHUNK);
+      const buffer = await slice.arrayBuffer();
+      dc.send(buffer);
+      offset += buffer.byteLength;
+
+      const pct = Math.min(100, Math.round(offset / totalSize * 100));
+      fill.style.width = pct + '%';
+      txt.textContent  = `Sending ${file.name} · ${fmtB(offset)} / ${fmtB(totalSize)} · ${pct}%`;
+
+      // Yield to keep UI responsive
+      await sleep(0);
+    }
+
+    dc.send(done);
+  }
+
+  setTimeout(() => { xg.classList.remove('show'); fill.style.width='0%'; }, 800);
 }
 
-// ── Feed Rendering ────────────────────────────────────────────────────────────
-function clearEmpty() { document.getElementById('emptyState')?.remove(); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-function renderFileMsg(m) {
+function getOpenChannels() {
+  const chs = [];
+  // Offline P2P channel
+  if (offlineDC?.readyState === 'open') {
+    if (!targetId || targetId === 'offline-peer') chs.push(offlineDC);
+  }
+  // LAN channels
+  const lTargets = targetId && targetId !== 'offline-peer'
+    ? (dataChans[targetId] ? [targetId] : [])
+    : Object.keys(dataChans);
+  lTargets.forEach(pid => { const dc=dataChans[pid]; if(dc?.readyState==='open') chs.push(dc); });
+  return chs;
+}
+
+function sendToAllDC(msg) {
+  if (offlineDC?.readyState === 'open') offlineDC.send(msg);
+  const lTargets = targetId && targetId !== 'offline-peer'
+    ? (dataChans[targetId] ? [targetId] : [])
+    : Object.keys(dataChans);
+  lTargets.forEach(pid => { const dc=dataChans[pid]; if(dc?.readyState==='open') dc.send(msg); });
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════════════════════════════
+function clearEmpty() { $('emptyFeed')?.remove(); }
+
+function renderText(m) {
   clearEmpty();
-  const feed = document.getElementById('feed');
-  const isEcho = m.echo;
-  const el = div('msg' + (m.private ? ' private' : '') + (isEcho ? ' echo' : ''));
-  el.innerHTML = `
-    <div class="msg-head">
-      <span class="msg-from${isEcho?' echo-from':''}">${isEcho?'You':esc(m.fromName)}</span>
-      <span class="msg-tag ${m.private?'priv':'broad'}">${m.private?'🔏 private':'📡 broadcast'}</span>
-      <span class="msg-time">${fmt(m.time)}</span>
-    </div>
-    ${m.subject ? `<div class="msg-subject">${esc(m.subject)}</div>` : ''}
-    ${m.description ? `<div class="msg-desc">${esc(m.description)}</div>` : ''}
-    <div class="file-grid">${m.files.map(fileCard).join('')}</div>`;
-  feed.appendChild(el);
-  feed.scrollTop = feed.scrollHeight;
-  logActivity(`${isEcho?'You':m.fromName} sent ${m.files.length} file(s)`);
+  const isMe = m.echo || m.fromId === myId;
+  const row  = mk('msg-row '+(isMe?'mine':'theirs'));
+  const bub  = mk('bubble'+(m.private?' priv':''));
+  bub.innerHTML =
+    `<div class="b-head">
+       <span class="b-from${isMe?' me':''}">${isMe?'You':esc(m.fromName)}</span>
+       ${m.private?'<span class="b-priv">🔏 private</span>':''}
+       <span class="b-time">${fmt(m.time||Date.now())}</span>
+     </div>` +
+    (m.subject     ? `<div class="b-subject">${esc(m.subject)}</div>` : '') +
+    (m.description ? `<div class="b-desc">${esc(m.description)}</div>` : '') +
+    (m.text        ? `<div class="b-text">${esc(m.text)}</div>` : '');
+  row.appendChild(bub);
+  feed().appendChild(row);
+  scrollFeed();
 }
 
-function renderTextMsg(m) {
+function renderSentFile(name, url, size, subject='', description='') {
   clearEmpty();
-  const feed = document.getElementById('feed');
-  const isEcho = m.echo;
-  const el = div('msg' + (m.private ? ' private' : '') + (isEcho ? ' echo' : ''));
-  el.innerHTML = `
-    <div class="msg-head">
-      <span class="msg-from${isEcho?' echo-from':''}">${isEcho?'You':esc(m.fromName)}</span>
-      <span class="msg-tag ${m.private?'priv':'broad'}">${m.private?'🔏 private':'📡 broadcast'}</span>
-      <span class="msg-time">${fmt(m.time)}</span>
-    </div>
-    ${m.subject ? `<div class="msg-subject">${esc(m.subject)}</div>` : ''}
-    ${m.description ? `<div class="msg-desc">${esc(m.description)}</div>` : ''}
-    ${m.text ? `<div class="msg-text">${esc(m.text)}</div>` : ''}`;
-  feed.appendChild(el);
-  feed.scrollTop = feed.scrollHeight;
-  logActivity(`${isEcho?'You':m.fromName} sent a message`);
-}
-
-function renderSystem(text) {
-  clearEmpty();
-  const feed = document.getElementById('feed');
-  const el = div('sys-msg'); el.textContent = text;
-  feed.appendChild(el);
-  feed.scrollTop = feed.scrollHeight;
-  logActivity(text);
-}
-
-function fileCard(f) {
-  const ext = (f.name.split('.').pop() || '').toLowerCase();
-  const isImg = ['jpg','jpeg','png','gif','webp','heic','avif','svg'].includes(ext);
-  const isVid = ['mp4','mov','avi','mkv','webm','m4v'].includes(ext);
+  const isImg = /\.(jpe?g|png|gif|webp|heic|avif|svg)$/i.test(name);
+  const isVid = /\.(mp4|mov|webm|mkv|avi|m4v)$/i.test(name);
+  const ext   = name.split('.').pop().toLowerCase();
+  const row   = mk('msg-row mine');
+  const bub   = mk('bubble');
   let thumb = '';
-  if (isImg) thumb = `<img class="file-thumb" src="${f.url}" loading="lazy" onclick="openPreview('img','${f.url}','${esc(f.name)}')"/>`;
-  else if (isVid) thumb = `<div class="file-thumb-icon" onclick="openPreview('vid','${f.url}','${esc(f.name)}')">▶️</div>`;
-  else thumb = `<div class="file-thumb-icon">${fileEmoji(ext)}</div>`;
-  return `<div class="file-card">
-    ${thumb}
-    <div class="file-info">
-      <div class="file-name">${esc(f.name)}</div>
-      <div class="file-size">${fmtSize(f.size)}</div>
-    </div>
-    <div class="file-dl"><a class="dl-btn" href="${f.url}" download="${esc(f.name)}">↓ Save</a></div>
-  </div>`;
+  if (isImg)      thumb = `<img class="fc-thumb" src="${url}" onclick="openPrev('img','${url}','${esc(name)}')"/>`;
+  else if (isVid) thumb = `<div class="fc-icon" onclick="openPrev('vid','${url}','${esc(name)}')" style="cursor:pointer">▶️</div>`;
+  else            thumb = `<div class="fc-icon">${fileEmoji(ext)}</div>`;
+  bub.innerHTML =
+    `<div class="b-head"><span class="b-from me">You</span><span class="b-time">${fmt(Date.now())}</span></div>` +
+    (subject     ? `<div class="b-subject">${esc(subject)}</div>` : '') +
+    (description ? `<div class="b-desc">${esc(description)}</div>` : '') +
+    `<div class="file-list"><div class="fc">
+      ${thumb}
+      <div class="fc-info"><div class="fc-name">${esc(name)}</div><div class="fc-size">${fmtB(size)}</div></div>
+      <div class="fc-dl"><a class="dl-btn" href="${url}" download="${esc(name)}">↓ Save</a></div>
+    </div></div>`;
+  row.appendChild(bub);
+  feed().appendChild(row);
+  scrollFeed();
+}
+
+function renderIncomingFile(fromName, meta, peerId) {
+  clearEmpty();
+  const row = mk('msg-row theirs');
+  const bub = mk('bubble');
+  bub.innerHTML =
+    `<div class="b-head"><span class="b-from">${esc(fromName)}</span><span class="b-time">${fmt(Date.now())}</span></div>` +
+    (meta.subject     ? `<div class="b-subject">${esc(meta.subject)}</div>` : '') +
+    (meta.description ? `<div class="b-desc">${esc(meta.description)}</div>` : '') +
+    `<div class="file-list"><div class="fc" id="fc-${meta.id}">
+      <div class="fc-icon">📥</div>
+      <div class="xfer-wrap">
+        <div class="xfer-name">${esc(meta.name)}</div>
+        <div class="xfer-bar"><div class="xfer-fill" style="width:0%"></div></div>
+        <div class="xfer-sub">0 / ${fmtB(meta.size)} · 0%</div>
+      </div>
+    </div></div>`;
+  row.appendChild(bub);
+  feed().appendChild(row);
+  scrollFeed();
+  return bub.querySelector(`#fc-${meta.id}`);
+}
+
+function finaliseFileCard(cardEl, name, url, size) {
+  if (!cardEl) return;
+  const isImg = /\.(jpe?g|png|gif|webp|heic|avif|svg)$/i.test(name);
+  const isVid = /\.(mp4|mov|webm|mkv|avi|m4v)$/i.test(name);
+  const ext   = name.split('.').pop().toLowerCase();
+  let thumb = '';
+  if (isImg)      thumb = `<img class="fc-thumb" src="${url}" onclick="openPrev('img','${url}','${esc(name)}')"/>`;
+  else if (isVid) thumb = `<div class="fc-icon" onclick="openPrev('vid','${url}','${esc(name)}')" style="cursor:pointer">▶️</div>`;
+  else            thumb = `<div class="fc-icon">${fileEmoji(ext)}</div>`;
+  cardEl.innerHTML =
+    `${thumb}
+    <div class="fc-info"><div class="fc-name">${esc(name)}</div><div class="fc-size">${fmtB(size)}</div></div>
+    <div class="fc-dl"><a class="dl-btn" href="${url}" download="${esc(name)}">↓ Save</a></div>`;
+  scrollFeed();
+}
+
+function sysMsg(text) { clearEmpty(); const el=mk('sys-msg'); el.textContent=text; feed().appendChild(el); scrollFeed(); }
+function feed()       { return $('feed'); }
+function scrollFeed() { const f=feed(); f.scrollTop=f.scrollHeight; }
+
+// ══════════════════════════════════════════════════════════════════
+//  DEVICES
+// ══════════════════════════════════════════════════════════════════
+function renderDevices() {
+  const list   = $('devList');
+  const others = Object.values(peers).filter(p=>p.id!==myId);
+  const myEntry = myId ? [{ id:myId, name:myName||`Device-${myId}`, deviceType, isMe:true }] : [];
+
+  // Add offline peer if connected
+  const offlinePeerConnected = offlinePC?.connectionState === 'connected';
+  const offlinePeerEntry = offlinePeerConnected
+    ? [{ id:'offline-peer', name:'Offline Peer', deviceType:'phone', isOffline:true }] : [];
+
+  const all = [...myEntry, ...others, ...offlinePeerEntry];
+  if (!all.length) { list.innerHTML='<div class="no-devs">Waiting for devices…</div>'; return; }
+
+  list.innerHTML = all.map(p => {
+    const av  = (p.name||'?')[0].toUpperCase();
+    const sel = targetId === p.id;
+    return `<div class="dev${(p.isMe||p.isOffline)?'':''} ${p.isMe?' is-me':''} ${sel?' sel':''}"
+      ${!p.isMe?`onclick="selTarget('${p.id}','${esc(p.name)}')"`:''}>
+      <div class="dev-av ${p.deviceType||'desktop'}">${av}<div class="dev-online"></div></div>
+      <div class="dev-info"><div class="dev-name">${esc(p.name)}</div><div class="dev-type">${p.isOffline?'offline p2p':p.deviceType||'desktop'}</div></div>
+      ${p.isMe
+        ? `<span class="me-badge">you</span>`
+        : p.isOffline
+          ? `<span class="me-badge" style="color:var(--amber)">p2p</span>`
+          : `<button class="dev-blk" title="Block" onclick="event.stopPropagation();blockDev('${p.id}','${esc(p.name)}')">🚫</button>`}
+    </div>`;
+  }).join('');
+
+  const count = others.length + offlinePeerEntry.length;
+  $('devsLabel').textContent = `Devices · ${count+1}`;
+  if (currentMode === 'lan') $('chatSub').textContent = `${count} device${count!==1?'s':''} connected`;
+}
+
+function selTarget(id, name) {
+  if (targetId === id) { clearTarget(); return; }
+  targetId = id; targetName = name;
+  $('targetDisplay').innerHTML = `<div class="t-chip">🔏 ${esc(name)} <button onclick="clearTarget()">✕</button></div>`;
+  $('chatTo').textContent = `🔏 ${name}`;
+  renderDevices(); closeSidebar();
+}
+
+function clearTarget() {
+  targetId=null; targetName='';
+  $('targetDisplay').innerHTML = `<span class="bcast-lbl">📡 Everyone</span>`;
+  $('chatTo').textContent = currentMode==='offline'?'✈️ Offline P2P':'📡 Everyone on network';
+  renderDevices();
+}
+
+function blockDev(id, name) {
+  if (!confirm(`Block "${name}"?`)) return;
+  sig({ type:'block', targetId:id });
+  if (targetId===id) clearTarget();
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  UI HELPERS
+// ══════════════════════════════════════════════════════════════════
+function setConn(cls, label) {
+  $('connDot').className = 'conn-dot '+cls;
+  $('connLabel').innerHTML = `<strong>${label}</strong>`;
+}
+
+function onTxtInput(el) {
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,130)+'px';
+  $('sendBtn').disabled=!el.value.trim();
+}
+function onTxtKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendText();} }
+function toggleMeta() { $('metaWrap').classList.toggle('open'); }
+function openSidebar()  { $('sidebar').classList.add('open');  $('sbBackdrop').classList.add('show'); }
+function closeSidebar() { $('sidebar').classList.remove('open'); $('sbBackdrop').classList.remove('show'); }
+
+function openPrev(type,url,name) {
+  $('prevMedia').innerHTML = type==='img'
+    ? `<img src="${url}" alt="${name}"/>`
+    : `<video src="${url}" controls autoplay></video>`;
+  $('prevLbl').textContent=name; $('prevOv').classList.add('show');
+}
+function closePrev(e) {
+  if(e&&e.target!==$('prevOv')&&!e.currentTarget?.classList?.contains('prev-close'))return;
+  $('prevOv').classList.remove('show'); $('prevMedia').innerHTML='';
+}
+
+function openShare()     { $('shareOv').classList.add('show'); }
+function closeShare()    { $('shareOv').classList.remove('show'); }
+function closeShareBg(e) { if(e.target===$('shareOv'))closeShare(); }
+
+function copyLink() {
+  if (!networkUrl) { alert('LAN URL not loaded — are you in offline mode?'); return; }
+  navigator.clipboard?.writeText(networkUrl)
+    .then(()=>alert('Link copied! Share with devices on the same WiFi.'))
+    .catch(()=>prompt('Copy this link:',networkUrl));
+}
+async function nativeShare() { try{ await navigator.share({title:'Join Droply',url:networkUrl}); }catch{} }
+function shareWA()    { window.open(`https://wa.me/?text=${encodeURIComponent('Join my Droply room: '+networkUrl)}`); }
+function shareViber() { window.open(`viber://forward?text=${encodeURIComponent('Join my Droply room: '+networkUrl)}`); }
+function shareTG()    { window.open(`https://t.me/share/url?url=${encodeURIComponent(networkUrl)}&text=${encodeURIComponent('Join my Droply room')}`); }
+function shareSMS()   { window.open(`sms:?body=${encodeURIComponent('Join my Droply room: '+networkUrl)}`); }
+
+function openNameModal()  { $('nameInp').value=myName; $('nameModal').classList.add('show'); setTimeout(()=>$('nameInp').focus(),80); }
+function closeNameModal() { $('nameModal').classList.remove('show'); }
+function saveName() {
+  const n=$('nameInp').value.trim(); if(!n)return;
+  myName=n; localStorage.setItem('droply_name',n); identify(); closeNameModal();
 }
 
 function fileEmoji(ext) {
-  if (ext==='pdf') return '📄';
-  if (['doc','docx'].includes(ext)) return '📝';
-  if (['xls','xlsx'].includes(ext)) return '📊';
-  if (['zip','rar','7z'].includes(ext)) return '🗜️';
-  if (['mp3','aac','wav','flac'].includes(ext)) return '🎵';
+  if(['pdf'].includes(ext))               return '📄';
+  if(['doc','docx'].includes(ext))        return '📝';
+  if(['xls','xlsx','csv'].includes(ext))  return '📊';
+  if(['ppt','pptx'].includes(ext))        return '📊';
+  if(['zip','rar','7z','gz'].includes(ext))return '🗜️';
+  if(['mp3','aac','wav','flac'].includes(ext))return '🎵';
+  if(['apk'].includes(ext))               return '📱';
   return '📁';
 }
 
-// ── Preview ───────────────────────────────────────────────────────────────────
-function openPreview(type, url, name) {
-  document.getElementById('previewMedia').innerHTML = type === 'img'
-    ? `<img src="${url}" alt="${name}"/>`
-    : `<video src="${url}" controls autoplay style="max-width:90vw;max-height:78vh;border-radius:10px"></video>`;
-  document.getElementById('previewLabel').textContent = name;
-  document.getElementById('previewOverlay').classList.add('show');
-}
-function closePreview(e) {
-  if (e && e.target !== document.getElementById('previewOverlay')) return;
-  document.getElementById('previewOverlay').classList.remove('show');
-  document.getElementById('previewMedia').innerHTML = '';
-}
+// ══════════════════════════════════════════════════════════════════
+//  DRAG & DROP
+// ══════════════════════════════════════════════════════════════════
+let dragTimer;
+document.addEventListener('dragenter',e=>{e.preventDefault();$('dragOv').classList.add('show')});
+document.addEventListener('dragover', e=>{e.preventDefault();clearTimeout(dragTimer)});
+document.addEventListener('dragleave',()=>{dragTimer=setTimeout(()=>$('dragOv').classList.remove('show'),80)});
+document.addEventListener('drop',e=>{
+  e.preventDefault(); $('dragOv').classList.remove('show'); handleFiles(e.dataTransfer.files);
+});
 
-// ── Name modal ────────────────────────────────────────────────────────────────
-function openNameModal() { document.getElementById('nameInp').value = myName; document.getElementById('nameModal').classList.add('show'); document.getElementById('nameInp').focus(); }
-function closeNameModal() { document.getElementById('nameModal').classList.remove('show'); }
-function saveName() {
-  const n = document.getElementById('nameInp').value.trim();
-  if (!n) return;
-  myName = n;
-  localStorage.setItem('droply_name', n);
-  document.getElementById('topbarName').textContent = n + ' ✎';
-  if(!isOfflineMode) identify();
-  closeNameModal();
-}
-
-// ── Activity log ──────────────────────────────────────────────────────────────
-function logActivity(text) {
-  const log = document.getElementById('activityLog');
-  const el = div('act-item');
-  el.innerHTML = `<div class="act-dot"></div><div class="act-text">${esc(text)}</div><div class="act-time">${fmt(Date.now())}</div>`;
-  log.prepend(el);
-}
-
-// ── Drag & Drop ───────────────────────────────────────────────────────────────
-const dz = document.getElementById('dropZone');
-dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
-dz.addEventListener('dragleave', () => dz.classList.remove('over'));
-dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); handleFiles(e.dataTransfer.files); });
-
-// ── Utils ─────────────────────────────────────────────────────────────────────
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function div(cls){const d=document.createElement('div');d.className=cls;return d}
-function fmt(ts){return new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
-function fmtSize(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'KB';if(b<1073741824)return(b/1048576).toFixed(1)+'MB';return(b/1073741824).toFixed(2)+'GB'}
-
-boot();
+// ══════════════════════════════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════════════════════════════
+connect();
+setMode('lan');
+if (!myName) setTimeout(openNameModal, 900);
 </script>
+
+<!-- jsQR for camera-based QR scanning in offline mode -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </body>
 </html>
