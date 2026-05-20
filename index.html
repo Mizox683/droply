@@ -1,3 +1,4 @@
+cat > /mnt/user-data/outputs/droply/index.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,11 +8,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0e1117">
 <title>Droply</title>
-<link rel="manifest" href="/manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<!-- QR scanner + generator for offline mode -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -19,18 +19,15 @@
   --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.10);--b3:rgba(255,255,255,.16);
   --t1:#eef0f4;--t2:#7e8a9e;--t3:#424e62;
   --a:#00e5b0;--a-dim:rgba(0,229,176,.1);--a-glow:rgba(0,229,176,.25);
-  --red:#ff5f6d;--amber:#f6a623;--blue:#4f8ef7;
+  --red:#ff5f6d;--amber:#f6a623;--blue:#4f8ef7;--purple:#a78bfa;
   --me-bg:rgba(0,229,176,.08);--me-bord:rgba(0,229,176,.18);
   --them-bg:var(--s1);--them-bord:var(--b1);
   --r:14px;--rs:10px;--rxs:6px;
   --safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);
-  --safe-l:env(safe-area-inset-left,0px);--safe-r:env(safe-area-inset-right,0px);
 }
 html,body{height:100%;overflow:hidden;overscroll-behavior:none;background:var(--bg)}
 body{font-family:'Sora',sans-serif;color:var(--t1)}
-
-/* ── LAYOUT ── */
-.app{display:grid;grid-template-columns:272px 1fr;height:100dvh;height:100vh;overflow:hidden}
+.app{display:grid;grid-template-columns:280px 1fr;height:100dvh;height:100vh;overflow:hidden}
 
 /* ── SIDEBAR ── */
 .sidebar{background:var(--s1);border-right:1px solid var(--b1);display:flex;flex-direction:column;overflow:hidden;transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:80}
@@ -38,62 +35,86 @@ body{font-family:'Sora',sans-serif;color:var(--t1)}
 .logo-mark{width:34px;height:34px;border-radius:9px;background:var(--a);display:flex;align-items:center;justify-content:center;box-shadow:0 0 18px var(--a-glow);flex-shrink:0}
 .logo-mark svg{width:18px;height:18px;stroke:#000;fill:none;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
 .logo-name{font-size:17px;font-weight:700;letter-spacing:-.4px;flex:1}
-.sb-top-btns{display:flex;gap:6px}
 .ib{width:32px;height:32px;border-radius:8px;border:1px solid var(--b2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--t2);transition:.15s;font-size:14px}
 .ib:hover{background:var(--s3);border-color:var(--b3);color:var(--t1)}
 .ib:active{transform:scale(.9)}
 
-/* Mode toggle */
+/* Mode tabs */
 .mode-row{display:flex;margin:10px 14px 0;background:var(--s2);border:1px solid var(--b1);border-radius:var(--rs);padding:3px;gap:3px;flex-shrink:0}
 .mode-btn{flex:1;padding:7px 4px;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:.15s;background:transparent;color:var(--t3)}
 .mode-btn.active{background:var(--s4);color:var(--t1);box-shadow:0 1px 4px rgba(0,0,0,.3)}
 
-/* Connection state */
-.conn-row{display:flex;align-items:center;gap:8px;margin:8px 14px;padding:9px 12px;background:var(--s2);border-radius:var(--rs);border:1px solid var(--b1);font-size:12px;flex-shrink:0}
+/* Connection pill */
+.conn-row{display:flex;align-items:center;gap:8px;margin:8px 14px;padding:8px 12px;background:var(--s2);border-radius:var(--rs);border:1px solid var(--b1);font-size:11px;flex-shrink:0}
 .conn-dot{width:7px;height:7px;border-radius:50%;background:var(--t3);flex-shrink:0;transition:.4s}
 .conn-dot.on{background:var(--a);box-shadow:0 0 8px var(--a)}
 .conn-dot.p2p{background:var(--blue);box-shadow:0 0 8px var(--blue)}
-.conn-dot.offline{background:var(--amber);box-shadow:0 0 8px var(--amber)}
-.conn-label{color:var(--t2);flex:1;font-size:11px}
+.conn-dot.off{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.conn-label{color:var(--t2);flex:1}
 .conn-label strong{color:var(--t1);font-weight:600}
-.room-code{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3);padding:2px 6px;background:var(--s3);border-radius:4px}
+.room-pill{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3);padding:2px 7px;background:var(--s3);border-radius:4px;cursor:pointer;transition:.15s}
+.room-pill:hover{color:var(--t2)}
 
-/* QR block */
-.qr-block{margin:0 14px 4px;padding:14px;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);display:flex;flex-direction:column;align-items:center;gap:10px;flex-shrink:0}
-.qr-frame{width:148px;height:148px;background:#fff;border-radius:10px;padding:6px;display:flex;align-items:center;justify-content:center}
-.qr-frame img{width:100%;height:100%;display:block}
+/* ── LAN PANEL ── */
+.lan-panel{margin:0 14px 6px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.qr-card{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.qr-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3)}
+.qr-frame{background:#fff;border-radius:9px;padding:6px;display:flex;align-items:center;justify-content:center;width:140px;height:140px}
+.qr-frame img,.qr-frame canvas{width:128px;height:128px;display:block}
 .qr-url{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--a);text-align:center;word-break:break-all}
 .qr-hint{font-size:11px;color:var(--t3);text-align:center}
-.qr-share-row{display:flex;gap:6px;width:100%}
-.qr-share-row .sb-btn{flex:1}
-
-/* Offline panel */
-.offline-panel{margin:0 14px 4px;padding:14px;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);display:flex;flex-direction:column;gap:10px;flex-shrink:0;display:none}
-.offline-panel.show{display:flex}
-.op-title{font-size:12px;font-weight:700;color:var(--t1)}
-.op-step{font-size:11px;color:var(--t2);line-height:1.5}
-.op-step strong{color:var(--a)}
-.op-qr-wrap{background:#fff;border-radius:10px;padding:6px;display:flex;align-items:center;justify-content:center;min-height:148px}
-.op-qr-wrap canvas,.op-qr-wrap img{max-width:136px;max-height:136px}
-.op-btn{display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--b2);border-radius:var(--rs);background:var(--s3);padding:9px 12px;font-family:'Sora',sans-serif;font-size:12px;font-weight:500;color:var(--t1);cursor:pointer;transition:.15s;width:100%}
-.op-btn:hover{background:var(--s4);border-color:var(--b3)}
-.op-btn:active{transform:scale(.96)}
-.op-btn.primary{background:var(--a-dim);border-color:var(--a-glow);color:var(--a)}
-.op-btn.primary:hover{background:rgba(0,229,176,.15)}
-.op-status{font-size:11px;text-align:center;padding:6px;border-radius:var(--rxs);background:var(--s3)}
-.op-status.waiting{color:var(--amber)}
-.op-status.connected{color:var(--a)}
-.op-status.error{color:var(--red)}
-
-/* Shared sb-btn */
-.sb-btn{display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid var(--b2);border-radius:var(--rxs);background:var(--s3);padding:7px 10px;font-family:'Sora',sans-serif;font-size:11px;font-weight:500;color:var(--t1);cursor:pointer;transition:.15s;white-space:nowrap}
+.btn-row{display:flex;gap:6px;width:100%}
+.sb-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid var(--b2);border-radius:var(--rxs);background:var(--s3);padding:7px 8px;font-family:'Sora',sans-serif;font-size:11px;font-weight:500;color:var(--t1);cursor:pointer;transition:.15s;white-space:nowrap}
 .sb-btn:hover{background:var(--s4);border-color:var(--b3)}
 .sb-btn:active{transform:scale(.95)}
-.sb-btn.primary{background:var(--a-dim);border-color:var(--a-glow);color:var(--a)}
-.sb-btn.primary:hover{background:rgba(0,229,176,.15)}
+.sb-btn.accent{background:var(--a-dim);border-color:var(--a-glow);color:var(--a)}
+.sb-btn.accent:hover{background:rgba(0,229,176,.16)}
 
-/* Device list */
-.devs-label{padding:6px 16px;font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--t3);flex-shrink:0}
+/* ── OFFLINE PANEL ── */
+.off-panel{margin:0 14px 6px;display:none;flex-direction:column;gap:8px;flex-shrink:0}
+.off-panel.show{display:flex}
+
+/* Step cards */
+.step-card{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px}
+.step-title{font-size:12px;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:7px}
+.step-num{width:20px;height:20px;border-radius:50%;background:var(--a-dim);border:1px solid var(--a-glow);color:var(--a);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-desc{font-size:11px;color:var(--t2);line-height:1.5}
+
+/* My code display */
+.my-code-wrap{display:flex;flex-direction:column;gap:8px}
+.my-code-tabs{display:flex;gap:4px}
+.code-tab{flex:1;padding:5px;border:1px solid var(--b2);border-radius:6px;background:var(--s3);font-family:'Sora',sans-serif;font-size:10px;font-weight:600;color:var(--t3);cursor:pointer;transition:.15s;text-align:center}
+.code-tab.active{background:var(--a-dim);border-color:var(--a-glow);color:var(--a)}
+.code-qr-view{display:none;align-items:center;justify-content:center}
+.code-qr-view.show{display:flex}
+.code-txt-view{display:none;flex-direction:column;gap:6px}
+.code-txt-view.show{display:flex}
+.code-box{background:var(--s3);border:1px solid var(--b2);border-radius:var(--rs);padding:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--a);word-break:break-all;line-height:1.5;max-height:80px;overflow-y:auto;cursor:pointer;transition:.15s;user-select:all}
+.code-box:hover{border-color:var(--a-glow)}
+.code-copy-hint{font-size:10px;color:var(--t3);text-align:center}
+
+/* Their code input */
+.their-code-wrap{display:flex;flex-direction:column;gap:6px}
+.inp{background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);color:var(--t1);font-family:'Sora',sans-serif;font-size:13px;padding:8px 11px;outline:none;transition:.2s;width:100%}
+.inp:focus{border-color:rgba(0,229,176,.4)}
+.inp::placeholder{color:var(--t3)}
+.their-ta{background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);color:var(--t1);font-family:'JetBrains Mono',monospace;font-size:10px;padding:8px 11px;outline:none;transition:.2s;width:100%;resize:none;min-height:64px;line-height:1.5}
+.their-ta:focus{border-color:rgba(0,229,176,.4)}
+.their-ta::placeholder{color:var(--t3)}
+.off-status{font-size:11px;text-align:center;padding:7px 10px;border-radius:var(--rxs);background:var(--s3);display:none}
+.off-status.show{display:block}
+.off-status.waiting{color:var(--amber)}
+.off-status.ok{color:var(--a)}
+.off-status.err{color:var(--red)}
+
+/* Scan button */
+.scan-btn{display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--b2);border-radius:var(--rs);background:var(--s3);padding:9px;font-family:'Sora',sans-serif;font-size:12px;font-weight:500;color:var(--t1);cursor:pointer;transition:.15s;width:100%}
+.scan-btn:hover{background:var(--s4);border-color:var(--b3)}
+.scan-btn:active{transform:scale(.96)}
+.scan-btn.accent{background:var(--a-dim);border-color:var(--a-glow);color:var(--a)}
+
+/* Devices */
+.devs-hd{padding:6px 16px;font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--t3);flex-shrink:0}
 .devs{flex:1;overflow-y:auto;padding:0 10px 12px}
 .devs::-webkit-scrollbar{width:3px}
 .devs::-webkit-scrollbar-thumb{background:var(--b2);border-radius:99px}
@@ -102,14 +123,16 @@ body{font-family:'Sora',sans-serif;color:var(--t1)}
 .dev.sel{background:var(--a-dim);border-color:rgba(0,229,176,.2)}
 .dev.is-me{opacity:.55;cursor:default;pointer-events:none}
 .dev-av{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;background:var(--s3);color:var(--t2);position:relative}
-.dev-av.phone{background:#0d2d3d;color:#4f8ef7}
+.dev-av.phone{background:#0d2d3d;color:var(--blue)}
 .dev-av.tablet{background:#0d2d24;color:var(--a)}
-.dev-av.desktop{background:#1e1830;color:#a78bfa}
+.dev-av.desktop{background:#1e1830;color:var(--purple)}
 .dev-online{position:absolute;bottom:0;right:0;width:9px;height:9px;border-radius:50%;background:var(--a);border:2px solid var(--s1)}
 .dev-info{flex:1;min-width:0}
 .dev-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dev-type{font-size:10px;color:var(--t3);margin-top:1px}
-.me-badge{font-size:10px;color:var(--a);background:var(--a-dim);padding:2px 7px;border-radius:99px;white-space:nowrap}
+.dev-sub{font-size:10px;color:var(--t3);margin-top:1px}
+.me-badge{font-size:10px;padding:2px 7px;border-radius:99px;white-space:nowrap}
+.me-badge.lan{color:var(--a);background:var(--a-dim)}
+.me-badge.p2p{color:var(--amber);background:rgba(246,166,35,.1)}
 .dev-blk{width:26px;height:26px;border-radius:6px;border:1px solid var(--b1);background:transparent;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;color:var(--t3);transition:.15s}
 .dev-blk:hover{background:rgba(255,95,109,.12);color:var(--red);border-color:rgba(255,95,109,.25)}
 .no-devs{padding:20px 14px;font-size:12px;color:var(--t3);text-align:center}
@@ -122,11 +145,11 @@ body{font-family:'Sora',sans-serif;color:var(--t1)}
 .chat-info{flex:1;min-width:0}
 .chat-to{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chat-sub{font-size:11px;color:var(--t2);margin-top:1px}
-.mode-badge{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:4px 9px;border-radius:99px;flex-shrink:0;white-space:nowrap}
-.mode-badge.lan{color:var(--a);background:var(--a-dim);border:1px solid var(--a-glow)}
-.mode-badge.offline-badge{color:var(--amber);background:rgba(246,166,35,.1);border:1px solid rgba(246,166,35,.25)}
-.mode-badge.p2p-badge{color:var(--blue);background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2)}
-.mode-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 6px currentColor}
+.hd-badge{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:4px 9px;border-radius:99px;flex-shrink:0;white-space:nowrap;border:1px solid}
+.hd-badge.lan{color:var(--a);background:var(--a-dim);border-color:var(--a-glow)}
+.hd-badge.off{color:var(--amber);background:rgba(246,166,35,.1);border-color:rgba(246,166,35,.25)}
+.hd-badge.p2p{color:var(--blue);background:rgba(79,142,247,.1);border-color:rgba(79,142,247,.2)}
+.hd-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 6px currentColor}
 
 /* Feed */
 .feed{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:6px;overscroll-behavior:contain}
@@ -136,8 +159,6 @@ body{font-family:'Sora',sans-serif;color:var(--t1)}
 .empty-icon{width:64px;height:64px;border-radius:18px;background:var(--s1);border:1px solid var(--b1);display:flex;align-items:center;justify-content:center;font-size:28px}
 .empty-feed p{font-size:13px;color:var(--t3);line-height:1.7}
 .empty-feed strong{color:var(--t2)}
-
-/* Bubbles */
 .msg-row{display:flex;flex-direction:column;animation:pop .18s ease}
 .msg-row.mine{align-items:flex-end}
 .msg-row.theirs{align-items:flex-start}
@@ -155,16 +176,14 @@ body{font-family:'Sora',sans-serif;color:var(--t1)}
 .b-subject{font-size:13px;font-weight:600;margin-bottom:2px}
 .b-desc{font-size:12px;color:var(--t2);margin-bottom:7px;line-height:1.5}
 .b-text{font-size:14px;line-height:1.58}
-
-/* File cards */
 .file-list{display:flex;flex-direction:column;gap:5px;margin-top:6px}
 .fc{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);border-radius:var(--rs);overflow:hidden}
 .fc-thumb{width:50px;height:50px;object-fit:cover;flex-shrink:0;cursor:zoom-in;display:block}
-.fc-icon{width:50px;height:50px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;background:var(--s3);cursor:pointer}
+.fc-icon{width:50px;height:50px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;background:var(--s3)}
 .fc-info{flex:1;min-width:0;padding:0 2px}
 .fc-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fc-size{font-size:10px;color:var(--t3);margin-top:2px;font-family:'JetBrains Mono',monospace}
-.fc-dl{margin-right:8px;display:flex;align-items:center}
+.fc-dl{margin-right:8px}
 .xfer-wrap{padding:6px 10px 8px;flex:1}
 .xfer-name{font-size:12px;font-weight:500;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .xfer-bar{height:3px;background:var(--s4);border-radius:99px;overflow:hidden}
@@ -180,12 +199,14 @@ body{font-family:'Sora',sans-serif;color:var(--t1)}
 .target-bar .lbl{color:var(--t2)}
 .t-chip{display:flex;align-items:center;gap:5px;background:var(--a-dim);border:1px solid rgba(0,229,176,.22);border-radius:99px;padding:3px 10px 3px 8px;font-size:12px;font-weight:500;color:var(--a)}
 .t-chip button{background:none;border:none;color:var(--a);cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 3px}
-.bcast-lbl{color:var(--t3);display:flex;align-items:center;gap:5px}
+.bcast-lbl{color:var(--t3)}
 .meta-wrap{display:none;flex-direction:column;gap:5px;padding:8px 12px 0}
 .meta-wrap.open{display:flex}
-.inp{background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);color:var(--t1);font-family:'Sora',sans-serif;font-size:13px;padding:8px 11px;outline:none;transition:.2s;width:100%}
-.inp:focus{border-color:rgba(0,229,176,.4)}
-.inp::placeholder{color:var(--t3)}
+.xfer-global{display:none;align-items:center;gap:8px;padding:6px 14px;background:var(--s2);border-top:1px solid var(--b1)}
+.xfer-global.show{display:flex}
+.xg-track{flex:1;height:2px;background:var(--s3);border-radius:99px;overflow:hidden}
+.xg-fill{height:100%;background:var(--a);border-radius:99px;transition:width .1s}
+.xg-txt{font-size:11px;color:var(--t2);font-family:'JetBrains Mono',monospace;white-space:nowrap}
 .compose-row{display:flex;align-items:flex-end;gap:6px;padding:8px 10px 10px}
 .compose-row textarea{flex:1;background:var(--s2);border:1px solid var(--b2);border-radius:20px;color:var(--t1);font-family:'Sora',sans-serif;font-size:14px;padding:10px 14px;outline:none;resize:none;line-height:1.45;max-height:130px;overflow-y:auto;transition:.2s}
 .compose-row textarea:focus{border-color:rgba(0,229,176,.4)}
@@ -204,20 +225,13 @@ body{font-family:'Sora',sans-serif;color:var(--t1)}
 .rb svg{width:17px;height:17px;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;fill:none;pointer-events:none}
 .rb.send svg{margin-left:2px}
 
-/* Global xfer bar */
-.xfer-global{display:none;align-items:center;gap:8px;padding:6px 14px;background:var(--s2);border-top:1px solid var(--b1)}
-.xfer-global.show{display:flex}
-.xg-track{flex:1;height:2px;background:var(--s3);border-radius:99px;overflow:hidden}
-.xg-fill{height:100%;background:var(--a);border-radius:99px;transition:width .1s}
-.xg-txt{font-size:11px;color:var(--t2);font-family:'JetBrains Mono',monospace;white-space:nowrap}
-
 /* Drag overlay */
 .drag-overlay{display:none;position:fixed;inset:0;z-index:990;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center}
 .drag-overlay.show{display:flex}
-.drag-box{border:2px dashed rgba(0,229,176,.45);border-radius:24px;padding:56px 72px;text-align:center;background:rgba(0,229,176,.05);animation:pulse 1.5s ease infinite}
+.drag-box{border:2px dashed rgba(0,229,176,.45);border-radius:24px;padding:48px 64px;text-align:center;background:rgba(0,229,176,.05);animation:pulse 1.5s ease infinite}
 @keyframes pulse{0%,100%{border-color:rgba(0,229,176,.45)}50%{border-color:rgba(0,229,176,.8)}}
 .drag-box .di{font-size:42px;margin-bottom:12px}
-.drag-box p{font-size:17px;font-weight:600;color:var(--t1)}
+.drag-box p{font-size:17px;font-weight:600}
 .drag-box span{font-size:13px;color:var(--t2)}
 
 /* Preview */
@@ -229,25 +243,26 @@ body{font-family:'Sora',sans-serif;color:var(--t1)}
 .prev-close:hover{background:var(--red);border-color:transparent}
 .prev-lbl{font-size:12px;color:var(--t2);max-width:380px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* Offline QR scan modal */
-.scan-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:800;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
-.scan-modal-bg.show{display:flex}
-.scan-modal{background:var(--s1);border:1px solid var(--b2);border-radius:var(--r);padding:24px;width:min(380px,94vw);display:flex;flex-direction:column;gap:14px}
-.scan-modal h3{font-size:16px;font-weight:700}
-.scan-modal p{font-size:13px;color:var(--t2);line-height:1.5}
-.scan-video-wrap{width:100%;aspect-ratio:1;background:#000;border-radius:var(--rs);overflow:hidden;position:relative}
-.scan-video-wrap video{width:100%;height:100%;object-fit:cover}
-.scan-video-wrap canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0}
-.scan-manual{display:flex;flex-direction:column;gap:8px}
-.scan-manual textarea{background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);color:var(--t1);font-family:'JetBrains Mono',monospace;font-size:11px;padding:10px;outline:none;resize:vertical;min-height:80px;width:100%}
-.scan-manual textarea:focus{border-color:rgba(0,229,176,.4)}
+/* Camera scan modal */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:850;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.modal-ov.show{display:flex}
+.modal{background:var(--s1);border:1px solid var(--b2);border-radius:var(--r);padding:22px;width:min(370px,94vw);display:flex;flex-direction:column;gap:14px}
+.modal h3{font-size:16px;font-weight:700}
+.modal p{font-size:13px;color:var(--t2);line-height:1.5}
+.scan-wrap{width:100%;aspect-ratio:1;background:#000;border-radius:var(--rs);overflow:hidden;position:relative}
+.scan-wrap video{width:100%;height:100%;object-fit:cover;display:block}
+.scan-wrap canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0}
+.scan-corner{position:absolute;width:24px;height:24px;border-color:var(--a);border-style:solid;border-width:0}
+.scan-corner.tl{top:10px;left:10px;border-top-width:3px;border-left-width:3px;border-radius:3px 0 0 0}
+.scan-corner.tr{top:10px;right:10px;border-top-width:3px;border-right-width:3px;border-radius:0 3px 0 0}
+.scan-corner.bl{bottom:10px;left:10px;border-bottom-width:3px;border-left-width:3px;border-radius:0 0 0 3px}
+.scan-corner.br{bottom:10px;right:10px;border-bottom-width:3px;border-right-width:3px;border-radius:0 0 3px 0}
 .modal-btns{display:flex;gap:8px;justify-content:flex-end}
 .btn{background:var(--a);color:#000;border:none;border-radius:var(--rs);padding:9px 16px;font-family:'Sora',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
 .btn:active{opacity:.8}
 .btn.ghost{background:transparent;border:1px solid var(--b2);color:var(--t2)}
 .btn.ghost:hover{color:var(--t1);border-color:var(--b3)}
 .btn.sm{padding:7px 13px;font-size:12px}
-.btn:disabled{opacity:.4;cursor:default}
 
 /* Share sheet */
 .share-ov{display:none;position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center}
@@ -258,7 +273,7 @@ body{font-family:'Sora',sans-serif;color:var(--t1)}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
 .ss-title{font-size:16px;font-weight:700;margin-bottom:4px}
 .ss-url{font-size:11px;color:var(--t2);font-family:'JetBrains Mono',monospace;word-break:break-all;margin-bottom:16px;padding:8px 10px;background:var(--s2);border-radius:var(--rxs);border:1px solid var(--b1)}
-.ss-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-bottom:18px}
+.ss-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-bottom:4px}
 .ss-item{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border-radius:var(--rs);background:var(--s2);border:1px solid var(--b1);cursor:pointer;transition:.15s;font-size:11px;font-weight:500;color:var(--t2);font-family:'Sora',sans-serif}
 .ss-item:hover{background:var(--s3);border-color:var(--b2);color:var(--t1)}
 .ss-item:active{transform:scale(.93)}
@@ -267,11 +282,8 @@ body{font-family:'Sora',sans-serif;color:var(--t1)}
 .ss-close:hover{background:var(--s3)}
 
 /* Name modal */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:700;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
-.modal-bg.show{display:flex}
-.modal{background:var(--s1);border:1px solid var(--b2);border-radius:var(--r);padding:24px;width:min(320px,90vw);display:flex;flex-direction:column;gap:14px}
-.modal h3{font-size:16px;font-weight:700}
-.modal p{font-size:13px;color:var(--t2);line-height:1.5}
+.name-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:700;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.name-modal-bg.show{display:flex}
 
 /* Mobile */
 @media(max-width:768px){
@@ -281,135 +293,157 @@ body{font-family:'Sora',sans-serif;color:var(--t1)}
   .sb-backdrop{display:none;position:fixed;inset:0;z-index:79;background:rgba(0,0,0,.5)}
   .sb-backdrop.show{display:block}
   .hamburger{display:flex}
-  .qr-frame{width:130px;height:130px}
+  .qr-frame{width:120px!important;height:120px!important}
+  .qr-frame img,.qr-frame canvas{width:108px!important;height:108px!important}
 }
 ::-webkit-scrollbar{width:3px;height:3px}
 ::-webkit-scrollbar-thumb{background:var(--b2);border-radius:99px}
 </style>
 </head>
 <body>
-
 <div class="app">
-  <!-- ═══ SIDEBAR ═══ -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sb-top">
-      <div class="logo-mark">
-        <svg viewBox="0 0 20 20"><path d="M10 3v10M10 3L7 6M10 3l3 3"/><path d="M4 14v2a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
-      </div>
-      <span class="logo-name">Droply</span>
-      <div class="sb-top-btns">
-        <button class="ib" onclick="openShare()" title="Share link">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        </button>
-        <button class="ib" onclick="openNameModal()" title="Change name">✎</button>
-      </div>
-    </div>
 
-    <!-- Mode toggle -->
-    <div class="mode-row">
-      <button class="mode-btn active" id="modeLanBtn" onclick="setMode('lan')">📡 LAN</button>
-      <button class="mode-btn" id="modeOffBtn" onclick="setMode('offline')">✈️ Offline</button>
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-top">
+    <div class="logo-mark">
+      <svg viewBox="0 0 20 20"><path d="M10 3v10M10 3L7 6M10 3l3 3"/><path d="M4 14v2a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
     </div>
+    <span class="logo-name">Droply</span>
+    <button class="ib" onclick="openShare()" title="Share">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    </button>
+    <button class="ib" onclick="openNameModal()" title="Change name">✎</button>
+  </div>
 
-    <!-- Connection state -->
-    <div class="conn-row">
-      <div class="conn-dot" id="connDot"></div>
-      <div class="conn-label" id="connLabel"><strong>Connecting…</strong></div>
-      <div class="room-code" id="roomCode" style="display:none"></div>
-    </div>
+  <!-- Mode tabs -->
+  <div class="mode-row">
+    <button class="mode-btn active" id="modeLanBtn" onclick="setMode('lan')">📡 LAN</button>
+    <button class="mode-btn" id="modeOffBtn" onclick="setMode('offline')">✈️ Offline</button>
+  </div>
 
-    <!-- LAN QR block -->
-    <div class="qr-block" id="lanPanel">
-      <div class="qr-frame">
-        <img id="qrImg" src="" alt="QR" style="opacity:.3"/>
-      </div>
+  <!-- Status pill -->
+  <div class="conn-row">
+    <div class="conn-dot" id="connDot"></div>
+    <div class="conn-label" id="connLabel"><strong>Connecting…</strong></div>
+    <div class="room-pill" id="roomPill" style="display:none" onclick="copyRoomCode()" title="Click to copy room code"></div>
+  </div>
+
+  <!-- LAN Panel -->
+  <div class="lan-panel" id="lanPanel">
+    <!-- QR 1: join room -->
+    <div class="qr-card">
+      <div class="qr-label">📡 Scan to join room</div>
+      <div class="qr-frame"><img id="qrJoinImg" src="" alt="QR" style="opacity:.3"/></div>
       <div class="qr-url" id="qrUrl">Loading…</div>
-      <div class="qr-hint">Same WiFi · Scan to join</div>
-      <div class="qr-share-row">
-        <button class="sb-btn primary" onclick="openShare()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          Share link
-        </button>
+      <div class="qr-hint">Opens Droply on the other device</div>
+      <div class="btn-row">
+        <button class="sb-btn accent" onclick="openShare()">⬆ Share link</button>
         <button class="sb-btn" onclick="copyLink()">🔗 Copy</button>
       </div>
     </div>
+  </div>
 
-    <!-- Offline panel -->
-    <div class="offline-panel" id="offlinePanel">
-      <div class="op-title">✈️ Offline P2P</div>
-      <div class="op-step">No WiFi needed. <strong>Step 1:</strong> One device taps "Create offer" and shows QR. <strong>Step 2:</strong> Other device scans it. <strong>Step 3:</strong> Scan the answer QR back. Done.</div>
+  <!-- Offline Panel -->
+  <div class="off-panel" id="offPanel">
 
-      <div id="offlineQrWrap" class="op-qr-wrap" style="display:none">
-        <div id="offlineQrDiv"></div>
-      </div>
-      <div class="op-status" id="offlineStatus" style="display:none"></div>
-
-      <button class="op-btn primary" id="offerBtn" onclick="offlineCreateOffer()">📤 Create offer (I go first)</button>
-      <button class="op-btn" id="scanAnswerBtn" onclick="openScanModal('answer')" style="display:none">📷 Scan answer QR</button>
-      <button class="op-btn" id="scanOfferBtn" onclick="openScanModal('offer')">📷 Scan offer QR (join)</button>
-    </div>
-
-    <div class="devs-label" id="devsLabel">Devices</div>
-    <div class="devs" id="devList"><div class="no-devs">Waiting for devices…</div></div>
-  </aside>
-  <div class="sb-backdrop" id="sbBackdrop" onclick="closeSidebar()"></div>
-
-  <!-- ═══ MAIN ═══ -->
-  <main class="main">
-    <div class="chat-hd">
-      <button class="hamburger" onclick="openSidebar()">
-        <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      </button>
-      <div class="chat-info">
-        <div class="chat-to" id="chatTo">📡 Everyone on network</div>
-        <div class="chat-sub" id="chatSub">0 devices connected</div>
-      </div>
-      <div class="mode-badge lan" id="modeBadge">LAN</div>
-    </div>
-
-    <div class="feed" id="feed">
-      <div class="empty-feed" id="emptyFeed">
-        <div class="empty-icon">📡</div>
-        <p><strong>No messages yet</strong><br>Drop files anywhere or type below.<br>Everything is direct device-to-device.<br>No data leaves your local network.</p>
-      </div>
-    </div>
-
-    <div class="compose">
-      <div class="target-bar">
-        <span class="lbl">To:</span>
-        <span id="targetDisplay" class="bcast-lbl">📡 Everyone</span>
-      </div>
-      <div class="xfer-global" id="xferGlobal">
-        <div class="xg-track"><div class="xg-fill" id="xgFill"></div></div>
-        <div class="xg-txt" id="xgTxt">Sending…</div>
-      </div>
-      <div class="meta-wrap" id="metaWrap">
-        <input class="inp" id="subjectInp" placeholder="Subject (optional)" maxlength="100"/>
-        <input class="inp" id="descInp" placeholder="Description (optional)" maxlength="500"/>
-      </div>
-      <div class="compose-row">
-        <button class="rb meta-btn" onclick="toggleMeta()" title="Add subject">⋯</button>
-        <textarea id="txtInp" placeholder="Message…" rows="1"
-          oninput="onTxtInput(this)" onkeydown="onTxtKey(event)"></textarea>
-        <div class="cbtns">
-          <button class="rb attach" title="Attach files">
-            <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-            <input type="file" multiple id="fileInp" onchange="handleFiles(this.files)"/>
-          </button>
-          <button class="rb send" id="sendBtn" onclick="sendText()" disabled>
-            <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          </button>
+    <!-- Step 1: Your code -->
+    <div class="step-card">
+      <div class="step-title"><div class="step-num">1</div> Your pairing code</div>
+      <div class="step-desc">Share this with the other device. They paste or scan it.</div>
+      <div class="my-code-wrap" id="myCodeWrap">
+        <div class="my-code-tabs">
+          <div class="code-tab active" id="tabQR" onclick="showCodeTab('qr')">QR code</div>
+          <div class="code-tab" id="tabTxt" onclick="showCodeTab('txt')">Text code</div>
+        </div>
+        <!-- QR view -->
+        <div class="code-qr-view show" id="codeQRView">
+          <div class="qr-frame" style="width:148px;height:148px">
+            <div id="myQRDiv"></div>
+          </div>
+        </div>
+        <!-- Text view -->
+        <div class="code-txt-view" id="codeTxtView">
+          <div class="code-box" id="myCodeBox" onclick="copyMyCode()" title="Click to copy">Generating…</div>
+          <div class="code-copy-hint">Tap to copy · Share with the other device</div>
         </div>
       </div>
     </div>
-  </main>
+
+    <!-- Step 2: Their code -->
+    <div class="step-card">
+      <div class="step-title"><div class="step-num">2</div> Enter their code</div>
+      <div class="step-desc">Paste or scan the code from the other device.</div>
+      <div class="their-code-wrap">
+        <textarea class="their-ta" id="theirCodeTa" placeholder="Paste their code here…" oninput="onTheirCodeInput()"></textarea>
+        <button class="scan-btn accent" onclick="openCamScan()">📷 Scan their QR instead</button>
+        <button class="scan-btn" id="connectBtn" onclick="doConnect()" disabled style="opacity:.4">🔗 Connect</button>
+      </div>
+      <div class="off-status" id="offStatus"></div>
+    </div>
+
+  </div>
+
+  <div class="devs-hd" id="devsHd">Devices</div>
+  <div class="devs" id="devList"><div class="no-devs">Waiting for devices…</div></div>
+</aside>
+<div class="sb-backdrop" id="sbBackdrop" onclick="closeSidebar()"></div>
+
+<!-- ══ MAIN ══ -->
+<main class="main">
+  <div class="chat-hd">
+    <button class="hamburger" onclick="openSidebar()">
+      <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="chat-info">
+      <div class="chat-to" id="chatTo">📡 Everyone on network</div>
+      <div class="chat-sub" id="chatSub">0 devices connected</div>
+    </div>
+    <div class="hd-badge lan" id="hdBadge">LAN</div>
+  </div>
+
+  <div class="feed" id="feed">
+    <div class="empty-feed" id="emptyFeed">
+      <div class="empty-icon">📡</div>
+      <p><strong>No messages yet</strong><br>Drop files or type below.<br>Everything goes direct device-to-device.<br>Nothing leaves your network.</p>
+    </div>
+  </div>
+
+  <div class="compose">
+    <div class="target-bar">
+      <span class="lbl">To:</span>
+      <span id="targetDisplay" class="bcast-lbl">📡 Everyone</span>
+    </div>
+    <div class="xfer-global" id="xferGlobal">
+      <div class="xg-track"><div class="xg-fill" id="xgFill"></div></div>
+      <div class="xg-txt" id="xgTxt">Sending…</div>
+    </div>
+    <div class="meta-wrap" id="metaWrap">
+      <input class="inp" id="subjectInp" placeholder="Subject (optional)" maxlength="100"/>
+      <input class="inp" id="descInp" placeholder="Description (optional)" maxlength="500"/>
+    </div>
+    <div class="compose-row">
+      <button class="rb meta-btn" onclick="toggleMeta()" title="Subject/desc">⋯</button>
+      <textarea id="txtInp" placeholder="Message…" rows="1"
+        oninput="onTxtInput(this)" onkeydown="onTxtKey(event)"></textarea>
+      <div class="cbtns">
+        <button class="rb attach" title="Attach files">
+          <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+          <input type="file" multiple id="fileInp" onchange="handleFiles(this.files)"/>
+        </button>
+        <button class="rb send" id="sendBtn" onclick="sendText()" disabled>
+          <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</main>
 </div>
 
 <!-- DRAG OVERLAY -->
 <div class="drag-overlay" id="dragOv">
   <div class="drag-box">
-    <div class="di">📂</div>
-    <p>Drop to share</p>
+    <div class="di">📂</div><p>Drop to send</p>
     <span>Direct P2P — nothing stored anywhere</span>
   </div>
 </div>
@@ -423,28 +457,27 @@ body{font-family:'Sora',sans-serif;color:var(--t1)}
   </div>
 </div>
 
-<!-- SCAN MODAL (offline QR handshake) -->
-<div class="scan-modal-bg" id="scanModalBg">
-  <div class="scan-modal">
-    <h3 id="scanModalTitle">Scan QR Code</h3>
-    <p id="scanModalDesc">Point your camera at the QR code shown on the other device.</p>
-    <div class="scan-video-wrap" id="scanVideoWrap">
+<!-- CAMERA SCAN MODAL -->
+<div class="modal-ov" id="camModal">
+  <div class="modal">
+    <h3>Scan their QR code</h3>
+    <p>Point your camera at the QR code shown on the other device.</p>
+    <div class="scan-wrap" id="scanWrap">
       <video id="scanVideo" playsinline autoplay muted></video>
       <canvas id="scanCanvas"></canvas>
-    </div>
-    <div class="scan-manual">
-      <p style="font-size:11px;color:var(--t3)">Or paste the connection code manually:</p>
-      <textarea id="scanManualTxt" placeholder="Paste connection code here…"></textarea>
+      <div class="scan-corner tl"></div>
+      <div class="scan-corner tr"></div>
+      <div class="scan-corner bl"></div>
+      <div class="scan-corner br"></div>
     </div>
     <div class="modal-btns">
-      <button class="btn ghost sm" onclick="closeScanModal()">Cancel</button>
-      <button class="btn sm" id="scanConfirmBtn" onclick="confirmScan()">Connect</button>
+      <button class="btn ghost sm" onclick="closeCamScan()">Cancel</button>
     </div>
   </div>
 </div>
 
 <!-- SHARE SHEET -->
-<div class="share-ov" id="shareOv" onclick="closeShareBg(event)">
+<div class="share-ov" id="shareOv" onclick="if(event.target===this)closeShare()">
   <div class="share-sheet">
     <div class="ss-title">Invite to your room</div>
     <div class="ss-url" id="ssUrl">Loading…</div>
@@ -461,10 +494,10 @@ body{font-family:'Sora',sans-serif;color:var(--t1)}
 </div>
 
 <!-- NAME MODAL -->
-<div class="modal-bg" id="nameModal">
+<div class="name-modal-bg" id="nameModal">
   <div class="modal">
     <h3>Your display name</h3>
-    <p>This is how other devices see you on the network.</p>
+    <p>How other devices see you.</p>
     <input class="inp" id="nameInp" placeholder="e.g. Alex's iPhone" maxlength="32"
       onkeydown="if(event.key==='Enter')saveName()"/>
     <div class="modal-btns">
@@ -476,42 +509,33 @@ body{font-family:'Sora',sans-serif;color:var(--t1)}
 
 <script>
 'use strict';
-
 // ══════════════════════════════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════════════════════════════
-let ws         = null;
-let myId       = null;
-let myRoom     = null;
-let myName     = localStorage.getItem('droply_name') || '';
-let targetId   = null;
-let targetName = '';
-let networkUrl = '';
-let peers      = {};
-let rtcConns   = {};   // peerId → RTCPeerConnection
-let dataChans  = {};   // peerId → RTCDataChannel
-let recvState  = {};   // peerId → { name, size, mime, bufs[], received, cardEl }
-let currentMode = 'lan'; // 'lan' | 'offline'
+let ws          = null;
+let myId        = null;
+let myName      = localStorage.getItem('droply_name') || '';
+let targetId    = null;
+let networkUrl  = '';
+let peers       = {};        // id → { id, name, deviceType }
+let lanRTCs     = {};        // peerId → RTCPeerConnection  (LAN mode)
+let lanDCs      = {};        // peerId → RTCDataChannel
+let recvState   = {};        // peerId → { name,size,mime,bufs[],received,cardEl }
+let currentMode = 'lan';
 
-// Offline P2P state
-let offlinePC      = null;  // the one RTCPeerConnection used in offline mode
-let offlineDC      = null;  // its data channel
-let offlineRole    = null;  // 'offerer' | 'answerer'
-let scanModalRole  = null;  // what we're scanning for
+// Offline P2P — one persistent connection, reused for all transfers
+let offPC      = null;       // RTCPeerConnection
+let offDC      = null;       // RTCDataChannel
+let offRole    = null;       // 'offerer' | 'answerer'
+let offState   = 'idle';     // 'idle' | 'wait-answer' | 'connected'
+let mySDPCode  = '';         // base64 of my SDP to share
 
+const CHUNK = 64 * 1024;
 const deviceType = /Mobi|Android/i.test(navigator.userAgent) ? 'phone'
                  : /iPad|Tablet/i.test(navigator.userAgent)  ? 'tablet' : 'desktop';
 
-// LAN: use Google STUN for NAT traversal on local networks
-// Offline: no STUN (no internet) — relies on direct link-local
-const RTC_LAN_CFG = {
-  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-};
-const RTC_OFFLINE_CFG = {
-  iceServers: [] // no external servers — pure local
-};
-
-const CHUNK = 64 * 1024; // 64 KB streaming chunks
+const RTC_LAN = { iceServers:[{urls:'stun:stun.l.google.com:19302'}] };
+const RTC_OFF = { iceServers:[] };
 
 // ══════════════════════════════════════════════════════════════════
 //  UTILS
@@ -521,435 +545,352 @@ const fmt  = ts => new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-
 const fmtB = b  => b<1024?b+'B':b<1048576?(b/1024).toFixed(1)+'KB':b<1073741824?(b/1048576).toFixed(1)+'MB':(b/1073741824).toFixed(2)+'GB';
 const mk   = cls => { const d=document.createElement('div'); d.className=cls; return d; };
 const $    = id  => document.getElementById(id);
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+function b64enc(str) { return btoa(unescape(encodeURIComponent(str))); }
+function b64dec(b64) { return decodeURIComponent(escape(atob(b64))); }
 
 // ══════════════════════════════════════════════════════════════════
-//  MODE SWITCH
+//  MODE
 // ══════════════════════════════════════════════════════════════════
-function setMode(mode) {
-  currentMode = mode;
-  $('modeLanBtn').classList.toggle('active', mode === 'lan');
-  $('modeOffBtn').classList.toggle('active', mode === 'offline');
-  $('lanPanel').style.display    = mode === 'lan'     ? '' : 'none';
-  $('offlinePanel').classList.toggle('show', mode === 'offline');
-
-  const badge = $('modeBadge');
-  if (mode === 'lan') {
-    badge.className = 'mode-badge lan';
-    badge.textContent = 'LAN';
-    $('chatTo').textContent = '📡 Everyone on network';
+function setMode(m) {
+  currentMode = m;
+  $('modeLanBtn').classList.toggle('active', m==='lan');
+  $('modeOffBtn').classList.toggle('active', m==='offline');
+  $('lanPanel').style.display    = m==='lan' ? '' : 'none';
+  $('offPanel').classList.toggle('show', m==='offline');
+  const b = $('hdBadge');
+  if (m==='lan') {
+    b.className='hd-badge lan'; b.textContent='LAN';
+    $('chatTo').textContent='📡 Everyone on network';
   } else {
-    badge.className = 'mode-badge offline-badge';
-    badge.textContent = 'Offline';
-    $('chatTo').textContent = '✈️ Offline P2P';
-    $('chatSub').textContent = 'No WiFi needed';
+    b.className='hd-badge off'; b.textContent='Offline';
+    $('chatTo').textContent='✈️ Offline P2P';
+    $('chatSub').textContent = offState==='connected' ? '1 device connected' : 'Not connected';
+    // Generate my offer code as soon as offline tab is opened
+    if (offState==='idle') initOfflineOffer();
   }
 }
 
 // ══════════════════════════════════════════════════════════════════
-//  LAN MODE — WebSocket signalling
+//  LAN — WebSocket signalling
 // ══════════════════════════════════════════════════════════════════
 function connect() {
-  // Only run in LAN mode; if server not available, just skip gracefully
   try {
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const proto = location.protocol==='https:'?'wss':'ws';
     ws = new WebSocket(`${proto}://${location.host}`);
-    ws.onopen  = () => { setConn('on','Connected'); identify(); loadQR(); };
-    ws.onmessage = ({ data }) => {
-      let m; try { m = JSON.parse(data); } catch { return; }
-      switch (m.type) {
-        case 'welcome':      onWelcome(m);     break;
-        case 'peers':        onPeers(m);       break;
-        case 'peer-joined':  onPeerJoined(m);  break;
-        case 'peer-updated': onPeerUpdated(m); break;
-        case 'peer-left':    onPeerLeft(m);    break;
-        case 'chat':         onChat(m);        break;
-        case 'error':        onSrvError(m);    break;
-        case 'rtc-offer':    onOffer(m);       break;
-        case 'rtc-answer':   onAnswer(m);      break;
-        case 'rtc-ice':      onIce(m);         break;
-      }
-    };
-    ws.onclose = () => {
-      setConn('','Reconnecting…');
-      Object.keys(rtcConns).forEach(closeLANPeer);
-      setTimeout(connect, 3000);
-    };
-    ws.onerror = () => ws.close();
-  } catch(e) {
-    setConn('offline','No server — use Offline mode');
-  }
+    ws.onopen    = () => { setConn('on','Connected'); identify(); loadQR(); };
+    ws.onmessage = ({data}) => { let m; try{m=JSON.parse(data);}catch{return;} dispatch(m); };
+    ws.onclose   = () => { setConn('','Reconnecting…'); Object.keys(lanRTCs).forEach(closeLAN); setTimeout(connect,3000); };
+    ws.onerror   = () => ws.close();
+  } catch { setConn('off','No server — use Offline mode'); }
 }
+function sig(o) { if(ws?.readyState===1) ws.send(JSON.stringify(o)); }
 
-function sig(obj) { if (ws?.readyState === 1) ws.send(JSON.stringify(obj)); }
+function dispatch(m) {
+  if (m.type==='welcome')      onWelcome(m);
+  else if (m.type==='peers')   onPeers(m);
+  else if (m.type==='peer-joined')  onPeerJoined(m);
+  else if (m.type==='peer-updated') onPeerUpdated(m);
+  else if (m.type==='peer-left')    onPeerLeft(m);
+  else if (m.type==='chat')         onChat(m);
+  else if (m.type==='error')        onSrvErr(m);
+  else if (m.type==='rtc-offer')    onOffer(m);
+  else if (m.type==='rtc-answer')   onAnswer(m);
+  else if (m.type==='rtc-ice')      onIce(m);
+}
 
 function onWelcome(m) {
-  myId = m.id; myRoom = m.room;
-  $('roomCode').textContent = m.room;
-  $('roomCode').style.display = 'block';
+  myId = m.id;
+  $('roomPill').textContent = m.room;
+  $('roomPill').style.display='block';
   identify();
-  (m.peers || []).forEach(p => { peers[p.id] = p; initLANRTC(p.id, true); });
-  renderDevices();
+  (m.peers||[]).forEach(p => { peers[p.id]=p; initLAN(p.id,true); });
+  renderDevs();
 }
-
 function onPeers(m) {
-  const newMap = {};
-  m.peers.forEach(p => { newMap[p.id] = p; });
-  Object.keys(peers).forEach(id => { if (!newMap[id]) closeLANPeer(id); });
-  m.peers.forEach(p => { if (!peers[p.id] && p.id !== myId) initLANRTC(p.id, true); });
-  peers = newMap;
-  renderDevices();
-  const count = Object.values(peers).filter(p=>p.id!==myId).length;
-  $('chatSub').textContent = `${count} device${count!==1?'s':''} connected`;
+  const nm={};
+  m.peers.forEach(p=>nm[p.id]=p);
+  Object.keys(peers).forEach(id=>{ if(!nm[id]) closeLAN(id); });
+  m.peers.forEach(p=>{ if(!peers[p.id]&&p.id!==myId) initLAN(p.id,true); });
+  peers=nm; renderDevs();
+  const c=Object.values(peers).filter(p=>p.id!==myId).length;
+  $('chatSub').textContent=`${c} device${c!==1?'s':''} connected`;
 }
-
-function onPeerJoined(m) { peers[m.peer.id] = m.peer; sysMsg(`${m.peer.name} joined`); renderDevices(); }
-function onPeerUpdated(m) { if (peers[m.peer.id]) Object.assign(peers[m.peer.id], m.peer); renderDevices(); }
+function onPeerJoined(m) { peers[m.peer.id]=m.peer; sysMsg(`${m.peer.name} joined`); renderDevs(); }
+function onPeerUpdated(m) { if(peers[m.peer.id]) Object.assign(peers[m.peer.id],m.peer); renderDevs(); }
 function onPeerLeft(m) {
-  const name = peers[m.id]?.name || m.name || 'A device';
-  closeLANPeer(m.id); delete peers[m.id];
-  sysMsg(`${name} left`); renderDevices();
-  if (targetId === m.id) clearTarget();
+  const n=peers[m.id]?.name||m.name||'A device';
+  closeLAN(m.id); delete peers[m.id];
+  sysMsg(`${n} left`); renderDevs();
+  if(targetId===m.id) clearTarget();
 }
 function onChat(m) { renderText(m); }
-
-function onSrvError(m) {
-  if (m.code === 'NOT_LOCAL') {
-    // Not on LAN — switch to offline mode automatically
-    setMode('offline');
-    setConn('offline','Not on LAN — use Offline mode');
-    return;
-  }
-  if (m.code === 'BLOCKED') {
-    document.body.innerHTML = `<div style="display:flex;height:100dvh;align-items:center;justify-content:center;text-align:center;padding:24px;background:#0e1117;color:#eef0f4;font-family:sans-serif;flex-direction:column;gap:12px"><div style="font-size:42px">🚫</div><div style="font-size:18px;font-weight:700">You have been blocked from this room.</div></div>`;
-  }
+function onSrvErr(m) {
+  if(m.code==='NOT_LOCAL'){ setMode('offline'); setConn('off','Not on LAN'); return; }
+  if(m.code==='BLOCKED'){ document.body.innerHTML='<div style="display:flex;height:100dvh;align-items:center;justify-content:center;background:#0e1117;color:#eef0f4;font-family:sans-serif;flex-direction:column;gap:12px"><div style="font-size:42px">🚫</div><div style="font-size:18px;font-weight:700">You have been blocked.</div></div>'; }
 }
-
-function identify() { sig({ type:'identify', name: myName||`Device-${myId}`, deviceType }); }
+function identify() { sig({type:'identify',name:myName||`Device-${myId}`,deviceType}); }
 
 async function loadQR() {
   try {
     const r = await fetch('/qr').then(r=>r.json());
     networkUrl = r.url;
-    const img = $('qrImg'); img.src = r.qr; img.style.opacity = '1';
-    $('qrUrl').textContent = r.url;
-    $('ssUrl').textContent = r.url;
-    if (navigator.share) $('nativeBtn').style.display = 'flex';
+    const img = $('qrJoinImg'); img.src=r.qr; img.style.opacity='1';
+    $('qrUrl').textContent=r.url;
+    $('ssUrl').textContent=r.url;
+    if(navigator.share) $('nativeBtn').style.display='flex';
   } catch {}
 }
 
-// ── LAN WebRTC ───────────────────────────────────────────────────
-function initLANRTC(peerId, initiator) {
-  if (rtcConns[peerId]) return;
-  const pc = new RTCPeerConnection(RTC_LAN_CFG);
-  rtcConns[peerId] = pc;
-  if (initiator) { const dc = pc.createDataChannel('droply',{ordered:true}); setupDC(dc, peerId, 'lan'); }
-  pc.ondatachannel = ({ channel }) => setupDC(channel, peerId, 'lan');
-  pc.onicecandidate = ({ candidate }) => { if (candidate) sig({ type:'rtc-ice', toId:peerId, candidate }); };
-  pc.onconnectionstatechange = () => {
-    if (pc.connectionState === 'connected') { updateBadge(); }
-    if (['disconnected','failed','closed'].includes(pc.connectionState)) closeLANPeer(peerId);
+// ── LAN WebRTC ────────────────────────────────────────────────────
+function initLAN(pid, init) {
+  if(lanRTCs[pid]) return;
+  const pc = new RTCPeerConnection(RTC_LAN);
+  lanRTCs[pid]=pc;
+  if(init){ const dc=pc.createDataChannel('d',{ordered:true}); setupDC(dc,pid,'lan'); }
+  pc.ondatachannel = ({channel})=>setupDC(channel,pid,'lan');
+  pc.onicecandidate = ({candidate})=>{ if(candidate) sig({type:'rtc-ice',toId:pid,candidate}); };
+  pc.onconnectionstatechange = ()=>{
+    if(pc.connectionState==='connected') updateHdBadge();
+    if(['disconnected','failed','closed'].includes(pc.connectionState)) closeLAN(pid);
   };
-  if (initiator) {
-    pc.createOffer()
-      .then(o => pc.setLocalDescription(o))
-      .then(() => sig({ type:'rtc-offer', toId:peerId, offer:pc.localDescription }))
-      .catch(console.error);
-  }
-  return pc;
+  if(init) pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>sig({type:'rtc-offer',toId:pid,offer:pc.localDescription})).catch(console.error);
 }
-
 async function onOffer(m) {
-  let pc = rtcConns[m.fromId];
-  if (!pc) { pc = initLANRTC(m.fromId, false); }
+  let pc=lanRTCs[m.fromId]; if(!pc){pc=new RTCPeerConnection(RTC_LAN);lanRTCs[m.fromId]=pc;pc.ondatachannel=({channel})=>setupDC(channel,m.fromId,'lan');pc.onicecandidate=({c})=>{if(c)sig({type:'rtc-ice',toId:m.fromId,candidate:c});};}
   await pc.setRemoteDescription(new RTCSessionDescription(m.offer));
-  const answer = await pc.createAnswer();
-  await pc.setLocalDescription(answer);
-  sig({ type:'rtc-answer', toId:m.fromId, answer:pc.localDescription });
+  const a=await pc.createAnswer(); await pc.setLocalDescription(a);
+  sig({type:'rtc-answer',toId:m.fromId,answer:pc.localDescription});
+  pc.onconnectionstatechange=()=>{if(pc.connectionState==='connected')updateHdBadge();if(['disconnected','failed','closed'].includes(pc.connectionState))closeLAN(m.fromId);};
 }
-async function onAnswer(m) { const pc=rtcConns[m.fromId]; if(pc) await pc.setRemoteDescription(new RTCSessionDescription(m.answer)); }
-async function onIce(m) { const pc=rtcConns[m.fromId]; if(pc&&m.candidate) try{ await pc.addIceCandidate(new RTCIceCandidate(m.candidate)); }catch{} }
+async function onAnswer(m){const pc=lanRTCs[m.fromId];if(pc)await pc.setRemoteDescription(new RTCSessionDescription(m.answer));}
+async function onIce(m){const pc=lanRTCs[m.fromId];if(pc&&m.candidate)try{await pc.addIceCandidate(new RTCIceCandidate(m.candidate));}catch{}}
+function closeLAN(pid){lanDCs[pid]?.close();lanRTCs[pid]?.close();delete lanDCs[pid];delete lanRTCs[pid];delete recvState[pid];updateHdBadge();}
 
-function closeLANPeer(pid) {
-  dataChans[pid]?.close(); rtcConns[pid]?.close();
-  delete dataChans[pid]; delete rtcConns[pid]; delete recvState[pid];
-  updateBadge();
-}
-
-function updateBadge() {
-  const connected = Object.values(rtcConns).some(pc=>pc.connectionState==='connected')
-    || (offlinePC?.connectionState === 'connected');
-  const badge = $('modeBadge');
-  if (connected && currentMode === 'lan') {
-    badge.className = 'mode-badge p2p-badge'; badge.textContent = 'P2P';
-  } else if (currentMode === 'lan') {
-    badge.className = 'mode-badge lan'; badge.textContent = 'LAN';
+function updateHdBadge() {
+  const b=$('hdBadge');
+  if(currentMode==='offline'){
+    if(offState==='connected'){b.className='hd-badge p2p';b.textContent='P2P';}
+    else{b.className='hd-badge off';b.textContent='Offline';}
+    return;
   }
+  const anyP2P=Object.values(lanRTCs).some(pc=>pc.connectionState==='connected');
+  if(anyP2P){b.className='hd-badge p2p';b.textContent='P2P';}
+  else{b.className='hd-badge lan';b.textContent='LAN';}
 }
 
 // ══════════════════════════════════════════════════════════════════
-//  OFFLINE P2P — manual QR handshake, no server needed
+//  OFFLINE P2P — persistent connection via SDP code exchange
+//  Both sides generate their code simultaneously.
+//  A pastes B's code, B pastes A's code → connected.
+//  Connection stays alive — send unlimited files.
 // ══════════════════════════════════════════════════════════════════
 
-// Step 1 (offerer): create offer, show QR of SDP
-async function offlineCreateOffer() {
-  offlineRole = 'offerer';
-  offlinePC = new RTCPeerConnection(RTC_OFFLINE_CFG);
-  offlineDC = offlinePC.createDataChannel('droply', { ordered: true });
-  setupDC(offlineDC, 'offline', 'offline');
+async function initOfflineOffer() {
+  offRole  = 'offerer';
+  offState = 'wait-answer';
+  offPC    = new RTCPeerConnection(RTC_OFF);
+  offDC    = offPC.createDataChannel('d',{ordered:true});
+  setupDC(offDC,'off-peer','offline');
 
-  offlinePC.onicecandidate = () => {}; // we wait for gatheringcomplete
+  offPC.onconnectionstatechange = onOffStateChange;
 
-  await offlinePC.createOffer().then(o => offlinePC.setLocalDescription(o));
-
-  // Wait for ICE gathering to finish so we can embed everything in one QR
-  await waitForICEGathering(offlinePC);
-
-  const sdpPayload = JSON.stringify({
-    droply: 1,
-    role:   'offer',
-    sdp:    offlinePC.localDescription
-  });
-
-  showOfflineQR(sdpPayload);
-  setOfflineStatus('waiting', '⏳ Waiting for other device to scan…');
-
-  // Show "scan answer" button
-  $('offerBtn').style.display    = 'none';
-  $('scanAnswerBtn').style.display = '';
-  $('scanOfferBtn').style.display  = 'none';
+  await offPC.createOffer().then(o=>offPC.setLocalDescription(o));
+  await waitICE(offPC);
+  mySDPCode = b64enc(JSON.stringify({r:'o',sdp:offPC.localDescription}));
+  renderMyCode(mySDPCode);
+  setOffStatus('waiting','⏳ Share your code above, then paste theirs below');
 }
 
-// Step 2 (answerer): receives offer QR, creates answer QR
-async function offlineHandleOffer(offerData) {
-  offlineRole = 'answerer';
-  offlinePC = new RTCPeerConnection(RTC_OFFLINE_CFG);
-  offlinePC.ondatachannel = ({ channel }) => setupDC(channel, 'offline', 'offline');
-  offlinePC.onicecandidate = () => {};
+async function initOfflineAnswer(offerData) {
+  offRole = 'answerer';
+  offPC   = new RTCPeerConnection(RTC_OFF);
+  offPC.ondatachannel = ({channel})=>{ offDC=channel; setupDC(offDC,'off-peer','offline'); };
+  offPC.onconnectionstatechange = onOffStateChange;
 
-  await offlinePC.setRemoteDescription(new RTCSessionDescription(offerData.sdp));
-  const answer = await offlinePC.createAnswer();
-  await offlinePC.setLocalDescription(answer);
-  await waitForICEGathering(offlinePC);
-
-  const sdpPayload = JSON.stringify({
-    droply: 1,
-    role:   'answer',
-    sdp:    offlinePC.localDescription
-  });
-
-  showOfflineQR(sdpPayload);
-  setOfflineStatus('waiting', '⏳ Show this QR to the other device');
-
-  $('offerBtn').style.display     = 'none';
-  $('scanOfferBtn').style.display = 'none';
-  $('scanAnswerBtn').style.display = 'none';
-
-  offlinePC.onconnectionstatechange = () => {
-    if (offlinePC.connectionState === 'connected') {
-      setOfflineStatus('connected', '✅ Connected! You can now send files.');
-      updateBadge();
-      sysMsg('Offline P2P connected');
-      renderDevices();
-    }
-  };
+  await offPC.setRemoteDescription(new RTCSessionDescription(offerData.sdp));
+  const ans = await offPC.createAnswer();
+  await offPC.setLocalDescription(ans);
+  await waitICE(offPC);
+  mySDPCode = b64enc(JSON.stringify({r:'a',sdp:offPC.localDescription}));
+  renderMyCode(mySDPCode);
+  setOffStatus('waiting','⏳ Share your code above with the other device');
 }
 
-// Step 3 (offerer): receives answer QR
-async function offlineHandleAnswer(answerData) {
-  if (!offlinePC) return;
-  await offlinePC.setRemoteDescription(new RTCSessionDescription(answerData.sdp));
-  setOfflineStatus('waiting', '🔄 Connecting…');
-
-  offlinePC.onconnectionstatechange = () => {
-    if (offlinePC.connectionState === 'connected') {
-      setOfflineStatus('connected', '✅ Connected! You can now send files.');
-      updateBadge();
-      sysMsg('Offline P2P connected');
-      renderDevices();
-    }
-  };
-}
-
-function waitForICEGathering(pc) {
-  return new Promise(resolve => {
-    if (pc.iceGatheringState === 'complete') { resolve(); return; }
-    pc.onicegatheringstatechange = () => {
-      if (pc.iceGatheringState === 'complete') resolve();
-    };
-    // Fallback timeout — local ICE usually gathers in < 2s
-    setTimeout(resolve, 3000);
-  });
-}
-
-function showOfflineQR(text) {
-  const wrap = $('offlineQrWrap');
-  wrap.style.display = 'flex';
-  const div = $('offlineQrDiv');
-  div.innerHTML = '';
-  // Use QRCode.js lib
-  try {
-    new QRCode(div, { text, width: 136, height: 136, colorDark:'#000', colorLight:'#fff', correctLevel: QRCode.CorrectLevel.L });
-  } catch(e) {
-    // Fallback: show text
-    div.style.background='#fff'; div.style.padding='8px'; div.style.fontSize='8px'; div.style.wordBreak='break-all'; div.style.color='#000'; div.textContent = text;
-  }
-}
-
-function setOfflineStatus(cls, msg) {
-  const el = $('offlineStatus');
-  el.style.display = '';
-  el.className = 'op-status ' + cls;
-  el.textContent = msg;
-}
-
-// ── QR Scanner (offline handshake) ───────────────────────────────
-let scanStream = null;
-let scanInterval = null;
-
-function openScanModal(role) {
-  scanModalRole = role;
-  $('scanModalTitle').textContent = role === 'offer' ? 'Scan Offer QR' : 'Scan Answer QR';
-  $('scanModalDesc').textContent  = role === 'offer'
-    ? 'Scan the QR shown on the device that tapped "Create offer".'
-    : 'Scan the answer QR shown on the joining device.';
-  $('scanManualTxt').value = '';
-  $('scanModalBg').classList.add('show');
-  startCamera();
-}
-
-function closeScanModal() {
-  $('scanModalBg').classList.remove('show');
-  stopCamera();
-}
-
-async function startCamera() {
-  try {
-    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    const video = $('scanVideo');
-    video.srcObject = scanStream;
-    await video.play();
-    startScanLoop();
-  } catch(e) {
-    // Camera denied or not available — user can paste manually
-    $('scanVideoWrap').style.display = 'none';
-  }
-}
-
-function stopCamera() {
-  clearInterval(scanInterval);
-  scanInterval = null;
-  if (scanStream) { scanStream.getTracks().forEach(t=>t.stop()); scanStream = null; }
-  $('scanVideoWrap').style.display = '';
-}
-
-function startScanLoop() {
-  const video  = $('scanVideo');
-  const canvas = $('scanCanvas');
-  const ctx    = canvas.getContext('2d');
-
-  scanInterval = setInterval(() => {
-    if (video.readyState < 2) return;
-    canvas.width  = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
-    try {
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      // Use jsQR if available (loaded via CDN below), else skip
-      if (window.jsQR) {
-        const code = jsQR(imgData.data, canvas.width, canvas.height);
-        if (code && code.data) {
-          clearInterval(scanInterval);
-          stopCamera();
-          processScannedData(code.data);
-        }
-      }
-    } catch {}
-  }, 200);
-}
-
-async function confirmScan() {
-  const text = $('scanManualTxt').value.trim();
-  if (text) { closeScanModal(); processScannedData(text); }
-}
-
-async function processScannedData(raw) {
+async function doConnect() {
+  const raw = $('theirCodeTa').value.trim();
+  if(!raw) return;
   let data;
-  try { data = JSON.parse(raw); } catch { alert('Invalid QR code — not a Droply handshake.'); return; }
-  if (!data.droply) { alert('Not a Droply QR code.'); return; }
+  try { data = JSON.parse(b64dec(raw)); } catch { setOffStatus('err','❌ Invalid code — check you copied it fully'); return; }
 
-  if (data.role === 'offer' && scanModalRole === 'offer') {
-    await offlineHandleOffer(data);
-  } else if (data.role === 'answer' && scanModalRole === 'answer') {
-    await offlineHandleAnswer(data);
+  if(data.r==='o' && !offPC) {
+    // We got an offer — we're the answerer, generate answer
+    await initOfflineAnswer(data);
+  } else if(data.r==='a' && offPC && offRole==='offerer') {
+    // We got an answer — set it on our existing offer
+    try {
+      await offPC.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      setOffStatus('waiting','🔄 Connecting…');
+    } catch(e) { setOffStatus('err','❌ Failed to apply code'); }
+  } else if(data.r==='o' && offPC) {
+    // Already have a connection, restart with new offer
+    offPC.close(); offPC=null; offDC=null; offState='idle';
+    await initOfflineAnswer(data);
   } else {
-    alert('Wrong QR type scanned. Make sure you scan the right one.');
+    setOffStatus('err','❌ Unexpected code type');
   }
 }
 
-// ══════════════════════════════════════════════════════════════════
-//  SHARED DATA CHANNEL SETUP (LAN + Offline)
-// ══════════════════════════════════════════════════════════════════
-function setupDC(dc, peerId, mode) {
-  if (mode === 'offline') offlineDC = dc;
-  else dataChans[peerId] = dc;
-  dc.binaryType = 'arraybuffer';
-
-  dc.onopen = () => {
-    updateBadge();
-    if (mode === 'offline') {
-      setOfflineStatus('connected', '✅ Connected!');
-      sysMsg('Offline P2P connected');
-      renderDevices();
+function onOffStateChange() {
+  const st = offPC?.connectionState;
+  if(st==='connected') {
+    offState='connected';
+    setOffStatus('ok','✅ Connected! Send files freely — connection stays open.');
+    sysMsg('Offline P2P connected');
+    updateHdBadge();
+    renderDevs();
+    if(currentMode==='offline') {
+      $('chatSub').textContent='1 device connected';
+      $('chatTo').textContent='✈️ Offline Peer';
     }
-  };
-
-  dc.onclose = () => {
-    if (mode !== 'offline') delete dataChans[peerId];
-    updateBadge();
-  };
-
-  dc.onmessage = ({ data }) => {
-    const pid = mode === 'offline' ? 'offline-peer' : peerId;
-    if (typeof data === 'string') handleDCText(pid, data, mode);
-    else handleDCChunk(pid, data);
-  };
-}
-
-// ── DC text ───────────────────────────────────────────────────────
-function handleDCText(peerId, raw, mode) {
-  let m; try { m = JSON.parse(raw); } catch { return; }
-  const peerName = mode === 'offline' ? 'Offline Peer'
-    : (peers[peerId]?.name || 'Unknown');
-
-  if (m.type === 'chat') {
-    renderText({ ...m, fromId:peerId, fromName:peerName, echo:false });
   }
-  if (m.type === 'file-meta') {
-    recvState[peerId] = { name:m.name, size:m.size, mime:m.mime, id:m.id, bufs:[], received:0, cardEl:null };
-    recvState[peerId].cardEl = renderIncomingFile(peerName, m, peerId);
-  }
-  if (m.type === 'file-done') {
-    const s = recvState[peerId];
-    if (!s) return;
-    const blob = new Blob(s.bufs, { type: s.mime || 'application/octet-stream' });
-    const url  = URL.createObjectURL(blob);
-    finaliseFileCard(s.cardEl, s.name, url, blob.size);
-    delete recvState[peerId];
+  if(st==='disconnected'||st==='failed'||st==='closed') {
+    if(offState==='connected') {
+      offState='idle'; sysMsg('Offline peer disconnected');
+      setOffStatus('err','❌ Connection lost');
+      updateHdBadge(); renderDevs();
+    }
   }
 }
 
-// ── DC binary chunks ──────────────────────────────────────────────
-function handleDCChunk(peerId, chunk) {
-  const s = recvState[peerId];
-  if (!s) return;
-  s.bufs.push(chunk);
-  s.received += chunk.byteLength;
-  const pct = Math.round(s.received / s.size * 100);
-  if (s.cardEl) {
-    const fill = s.cardEl.querySelector('.xfer-fill');
-    const sub  = s.cardEl.querySelector('.xfer-sub');
-    if (fill) fill.style.width = pct + '%';
-    if (sub)  sub.textContent  = `${fmtB(s.received)} / ${fmtB(s.size)} · ${pct}%`;
+function waitICE(pc) {
+  return new Promise(res=>{
+    if(pc.iceGatheringState==='complete'){res();return;}
+    pc.onicegatheringstatechange=()=>{ if(pc.iceGatheringState==='complete') res(); };
+    setTimeout(res, 4000); // max wait
+  });
+}
+
+function renderMyCode(code) {
+  // QR
+  const div=$('myQRDiv'); div.innerHTML='';
+  try {
+    new QRCode(div,{text:code,width:128,height:128,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.L});
+  } catch {
+    div.textContent='QR unavailable — use text code';
+  }
+  // Text
+  $('myCodeBox').textContent=code;
+}
+
+function showCodeTab(t) {
+  $('tabQR').classList.toggle('active',t==='qr');
+  $('tabTxt').classList.toggle('active',t==='txt');
+  $('codeQRView').classList.toggle('show',t==='qr');
+  $('codeTxtView').classList.toggle('show',t==='txt');
+}
+
+function copyMyCode() {
+  navigator.clipboard?.writeText(mySDPCode)
+    .then(()=>{ $('code-copy-hint') && ($('code-copy-hint').textContent='Copied!'); })
+    .catch(()=>prompt('Copy this code:',mySDPCode));
+  // Fallback
+  const el=$('myCodeBox');
+  const r=document.createRange(); r.selectNode(el);
+  window.getSelection()?.removeAllRanges(); window.getSelection()?.addRange(r);
+}
+
+function onTheirCodeInput() {
+  const v=$('theirCodeTa').value.trim();
+  $('connectBtn').disabled=!v;
+  $('connectBtn').style.opacity=v?'1':'.4';
+}
+
+function setOffStatus(cls,msg) {
+  const el=$('offStatus');
+  el.className='off-status show '+cls;
+  el.textContent=msg;
+}
+
+// ── Camera QR scanner ──────────────────────────────────────────────
+let camStream=null, camInterval=null;
+
+function openCamScan() {
+  $('camModal').classList.add('show');
+  startCam();
+}
+function closeCamScan() {
+  $('camModal').classList.remove('show');
+  stopCam();
+}
+async function startCam() {
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const v=$('scanVideo'); v.srcObject=camStream; await v.play();
+    camInterval=setInterval(scanFrame,200);
+  } catch {
+    $('scanWrap').innerHTML='<div style="padding:24px;text-align:center;color:var(--t3);font-size:12px">Camera not available — paste the code manually.</div>';
+  }
+}
+function stopCam() {
+  clearInterval(camInterval); camInterval=null;
+  camStream?.getTracks().forEach(t=>t.stop()); camStream=null;
+}
+function scanFrame() {
+  const v=$('scanVideo'); if(!v||v.readyState<2) return;
+  const c=$('scanCanvas'); const ctx=c.getContext('2d');
+  c.width=v.videoWidth; c.height=v.videoHeight;
+  ctx.drawImage(v,0,0);
+  if(!window.jsQR) return;
+  const img=ctx.getImageData(0,0,c.width,c.height);
+  const code=jsQR(img.data,c.width,c.height);
+  if(code?.data) {
+    stopCam(); closeCamScan();
+    $('theirCodeTa').value=code.data;
+    onTheirCodeInput();
+    doConnect();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  SHARED DC SETUP
+// ══════════════════════════════════════════════════════════════════
+function setupDC(dc, pid, mode) {
+  if(mode==='lan') lanDCs[pid]=dc;
+  dc.binaryType='arraybuffer';
+  dc.onopen  = ()=>{ updateHdBadge(); if(mode==='offline'){ offState='connected'; onOffStateChange(); } };
+  dc.onclose = ()=>{ if(mode==='lan') delete lanDCs[pid]; updateHdBadge(); };
+  dc.onmessage = ({data})=>{
+    const p = mode==='offline' ? 'off-peer' : pid;
+    if(typeof data==='string') handleDCText(p,data,mode);
+    else handleDCChunk(p,data);
+  };
+}
+
+function handleDCText(pid,raw,mode) {
+  let m; try{m=JSON.parse(raw);}catch{return;}
+  const name = mode==='offline' ? 'Offline Peer' : (peers[pid]?.name||'Unknown');
+  if(m.type==='chat') renderText({...m,fromId:pid,fromName:name,echo:false});
+  if(m.type==='file-meta') {
+    recvState[pid]={name:m.name,size:m.size,mime:m.mime,id:m.id,bufs:[],received:0,cardEl:null};
+    recvState[pid].cardEl=renderIncomingFile(name,m);
+  }
+  if(m.type==='file-done') {
+    const s=recvState[pid]; if(!s) return;
+    const blob=new Blob(s.bufs,{type:s.mime||'application/octet-stream'});
+    finaliseFileCard(s.cardEl,s.name,URL.createObjectURL(blob),blob.size);
+    delete recvState[pid];
+  }
+}
+
+function handleDCChunk(pid,chunk) {
+  const s=recvState[pid]; if(!s) return;
+  s.bufs.push(chunk); s.received+=chunk.byteLength;
+  const pct=Math.round(s.received/s.size*100);
+  if(s.cardEl){
+    const f=s.cardEl.querySelector('.xfer-fill'); if(f) f.style.width=pct+'%';
+    const t=s.cardEl.querySelector('.xfer-sub');  if(t) t.textContent=`${fmtB(s.received)} / ${fmtB(s.size)} · ${pct}%`;
   }
 }
 
@@ -957,350 +898,188 @@ function handleDCChunk(peerId, chunk) {
 //  SEND
 // ══════════════════════════════════════════════════════════════════
 function sendText() {
-  const sub  = $('subjectInp').value.trim();
-  const desc = $('descInp').value.trim();
-  const text = $('txtInp').value.trim();
-  if (!text && !sub && !desc) return;
-
-  const payload = { type:'chat', subject:sub, description:desc, text, toId:targetId||undefined };
-
-  // LAN: also relay via WS for devices without P2P yet
-  if (currentMode === 'lan') sig(payload);
-
-  // Send over all open data channels
-  const dcMsg = JSON.stringify({ type:'chat', subject:sub, description:desc, text, time:Date.now() });
-  sendToAllDC(dcMsg);
-
-  // Local echo
-  renderText({ ...payload, fromId:myId, fromName:'You', echo:true, private:!!targetId, time:Date.now() });
-  $('txtInp').value = ''; $('txtInp').style.height='auto'; $('sendBtn').disabled=true;
+  const sub=$('subjectInp').value.trim(), desc=$('descInp').value.trim(), text=$('txtInp').value.trim();
+  if(!text&&!sub&&!desc) return;
+  const p={type:'chat',subject:sub,description:desc,text,toId:targetId||undefined};
+  if(currentMode==='lan') sig(p);
+  sendAllDC(JSON.stringify({type:'chat',subject:sub,description:desc,text,time:Date.now()}));
+  renderText({...p,fromId:myId,fromName:'You',echo:true,private:!!targetId,time:Date.now()});
+  $('txtInp').value=''; $('txtInp').style.height='auto'; $('sendBtn').disabled=true;
 }
 
-// ── Streaming file send ───────────────────────────────────────────
-// Uses FileReader to stream chunks without loading whole file into RAM first.
-// This means even multi-GB files can be sent without crashing the browser.
 async function handleFiles(files) {
-  if (!files?.length) return;
-  $('fileInp').value = '';
-  const sub  = $('subjectInp').value.trim();
-  const desc = $('descInp').value.trim();
-  for (const file of files) await sendFileStreaming(file, sub, desc);
+  if(!files?.length) return;
+  $('fileInp').value='';
+  const sub=$('subjectInp').value.trim(), desc=$('descInp').value.trim();
+  for(const f of files) await sendFileStream(f,sub,desc);
 }
 
-async function sendFileStreaming(file, subject='', description='') {
-  const fileId  = Math.random().toString(36).slice(2);
-  const targets = getOpenChannels();
-
-  if (!targets.length) { alert('No connected devices to send to.'); return; }
-
-  // Local echo — safe to use createObjectURL since we have the File object
-  const localUrl = URL.createObjectURL(file);
-  renderSentFile(file.name, localUrl, file.size, subject, description);
-
-  const meta = JSON.stringify({
-    type:'file-meta', id:fileId,
-    name:file.name, size:file.size,
-    mime:file.type||'application/octet-stream',
-    subject, description
-  });
-  const done = JSON.stringify({ type:'file-done', id:fileId });
-
-  const xg   = $('xferGlobal');
-  const fill = $('xgFill');
-  const txt  = $('xgTxt');
-  xg.classList.add('show');
-  txt.textContent = `Sending ${file.name}…`;
-  fill.style.width = '0%';
-
-  // Stream file using slice — no full arrayBuffer() load
-  const totalSize = file.size;
-  let offset = 0;
-
-  for (const dc of targets) {
-    if (dc.readyState !== 'open') continue;
+async function sendFileStream(file,subject='',description='') {
+  const chs=getOpenDCs();
+  if(!chs.length){ alert('No connected devices.'); return; }
+  const fid=Math.random().toString(36).slice(2);
+  renderSentFile(file.name,URL.createObjectURL(file),file.size,subject,description);
+  const meta=JSON.stringify({type:'file-meta',id:fid,name:file.name,size:file.size,mime:file.type||'application/octet-stream',subject,description});
+  const done=JSON.stringify({type:'file-done',id:fid});
+  const xg=$('xferGlobal'),fill=$('xgFill'),txt=$('xgTxt');
+  xg.classList.add('show'); fill.style.width='0%'; txt.textContent=`Sending ${file.name}…`;
+  for(const dc of chs) {
+    if(dc.readyState!=='open') continue;
     dc.send(meta);
-
-    offset = 0;
-    while (offset < totalSize) {
-      // Backpressure — wait if DC buffer is full (4 MB threshold)
-      while (dc.bufferedAmount > 4 * 1024 * 1024) {
-        await sleep(20);
-      }
-
-      const slice  = file.slice(offset, offset + CHUNK);
-      const buffer = await slice.arrayBuffer();
-      dc.send(buffer);
-      offset += buffer.byteLength;
-
-      const pct = Math.min(100, Math.round(offset / totalSize * 100));
-      fill.style.width = pct + '%';
-      txt.textContent  = `Sending ${file.name} · ${fmtB(offset)} / ${fmtB(totalSize)} · ${pct}%`;
-
-      // Yield to keep UI responsive
+    let offset=0;
+    while(offset<file.size) {
+      while(dc.bufferedAmount>4*1024*1024) await sleep(20);
+      const buf=await file.slice(offset,offset+CHUNK).arrayBuffer();
+      dc.send(buf); offset+=buf.byteLength;
+      const pct=Math.min(100,Math.round(offset/file.size*100));
+      fill.style.width=pct+'%';
+      txt.textContent=`Sending ${file.name} · ${fmtB(offset)} / ${fmtB(file.size)} · ${pct}%`;
       await sleep(0);
     }
-
     dc.send(done);
   }
-
-  setTimeout(() => { xg.classList.remove('show'); fill.style.width='0%'; }, 800);
+  setTimeout(()=>{xg.classList.remove('show');fill.style.width='0%';},800);
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-function getOpenChannels() {
-  const chs = [];
-  // Offline P2P channel
-  if (offlineDC?.readyState === 'open') {
-    if (!targetId || targetId === 'offline-peer') chs.push(offlineDC);
-  }
-  // LAN channels
-  const lTargets = targetId && targetId !== 'offline-peer'
-    ? (dataChans[targetId] ? [targetId] : [])
-    : Object.keys(dataChans);
-  lTargets.forEach(pid => { const dc=dataChans[pid]; if(dc?.readyState==='open') chs.push(dc); });
-  return chs;
+function getOpenDCs() {
+  const out=[];
+  if(offDC?.readyState==='open') out.push(offDC);
+  const ids=targetId&&targetId!=='off-peer'?(lanDCs[targetId]?[targetId]:[]):Object.keys(lanDCs);
+  ids.forEach(id=>{const d=lanDCs[id];if(d?.readyState==='open')out.push(d);});
+  return out;
 }
-
-function sendToAllDC(msg) {
-  if (offlineDC?.readyState === 'open') offlineDC.send(msg);
-  const lTargets = targetId && targetId !== 'offline-peer'
-    ? (dataChans[targetId] ? [targetId] : [])
-    : Object.keys(dataChans);
-  lTargets.forEach(pid => { const dc=dataChans[pid]; if(dc?.readyState==='open') dc.send(msg); });
+function sendAllDC(msg) {
+  if(offDC?.readyState==='open') offDC.send(msg);
+  const ids=targetId&&targetId!=='off-peer'?(lanDCs[targetId]?[targetId]:[]):Object.keys(lanDCs);
+  ids.forEach(id=>{const d=lanDCs[id];if(d?.readyState==='open')d.send(msg);});
 }
 
 // ══════════════════════════════════════════════════════════════════
 //  RENDER
 // ══════════════════════════════════════════════════════════════════
-function clearEmpty() { $('emptyFeed')?.remove(); }
+function clearEmpty(){$('emptyFeed')?.remove();}
+function feed(){return $('feed');}
+function scrollFeed(){const f=feed();f.scrollTop=f.scrollHeight;}
 
 function renderText(m) {
   clearEmpty();
-  const isMe = m.echo || m.fromId === myId;
-  const row  = mk('msg-row '+(isMe?'mine':'theirs'));
-  const bub  = mk('bubble'+(m.private?' priv':''));
-  bub.innerHTML =
-    `<div class="b-head">
-       <span class="b-from${isMe?' me':''}">${isMe?'You':esc(m.fromName)}</span>
-       ${m.private?'<span class="b-priv">🔏 private</span>':''}
-       <span class="b-time">${fmt(m.time||Date.now())}</span>
-     </div>` +
-    (m.subject     ? `<div class="b-subject">${esc(m.subject)}</div>` : '') +
-    (m.description ? `<div class="b-desc">${esc(m.description)}</div>` : '') +
-    (m.text        ? `<div class="b-text">${esc(m.text)}</div>` : '');
-  row.appendChild(bub);
-  feed().appendChild(row);
-  scrollFeed();
+  const isMe=m.echo||m.fromId===myId;
+  const row=mk('msg-row '+(isMe?'mine':'theirs'));
+  const bub=mk('bubble'+(m.private?' priv':''));
+  bub.innerHTML=
+    `<div class="b-head"><span class="b-from${isMe?' me':''}">${isMe?'You':esc(m.fromName)}</span>${m.private?'<span class="b-priv">🔏 private</span>':''}<span class="b-time">${fmt(m.time||Date.now())}</span></div>`+
+    (m.subject?`<div class="b-subject">${esc(m.subject)}</div>`:'')+
+    (m.description?`<div class="b-desc">${esc(m.description)}</div>`:'')+
+    (m.text?`<div class="b-text">${esc(m.text)}</div>`:'');
+  row.appendChild(bub); feed().appendChild(row); scrollFeed();
 }
 
-function renderSentFile(name, url, size, subject='', description='') {
+function renderSentFile(name,url,size,subject,description) {
   clearEmpty();
-  const isImg = /\.(jpe?g|png|gif|webp|heic|avif|svg)$/i.test(name);
-  const isVid = /\.(mp4|mov|webm|mkv|avi|m4v)$/i.test(name);
-  const ext   = name.split('.').pop().toLowerCase();
-  const row   = mk('msg-row mine');
-  const bub   = mk('bubble');
-  let thumb = '';
-  if (isImg)      thumb = `<img class="fc-thumb" src="${url}" onclick="openPrev('img','${url}','${esc(name)}')"/>`;
-  else if (isVid) thumb = `<div class="fc-icon" onclick="openPrev('vid','${url}','${esc(name)}')" style="cursor:pointer">▶️</div>`;
-  else            thumb = `<div class="fc-icon">${fileEmoji(ext)}</div>`;
-  bub.innerHTML =
-    `<div class="b-head"><span class="b-from me">You</span><span class="b-time">${fmt(Date.now())}</span></div>` +
-    (subject     ? `<div class="b-subject">${esc(subject)}</div>` : '') +
-    (description ? `<div class="b-desc">${esc(description)}</div>` : '') +
-    `<div class="file-list"><div class="fc">
-      ${thumb}
-      <div class="fc-info"><div class="fc-name">${esc(name)}</div><div class="fc-size">${fmtB(size)}</div></div>
-      <div class="fc-dl"><a class="dl-btn" href="${url}" download="${esc(name)}">↓ Save</a></div>
-    </div></div>`;
-  row.appendChild(bub);
-  feed().appendChild(row);
-  scrollFeed();
+  const isImg=/\.(jpe?g|png|gif|webp|heic|avif|svg)$/i.test(name);
+  const isVid=/\.(mp4|mov|webm|mkv|avi|m4v)$/i.test(name);
+  const ext=name.split('.').pop().toLowerCase();
+  const row=mk('msg-row mine'), bub=mk('bubble');
+  let th=isImg?`<img class="fc-thumb" src="${url}" onclick="openPrev('img','${url}','${esc(name)}')"/>`:isVid?`<div class="fc-icon" onclick="openPrev('vid','${url}','${esc(name)}')" style="cursor:pointer">▶️</div>`:`<div class="fc-icon">${fileEmoji(ext)}</div>`;
+  bub.innerHTML=`<div class="b-head"><span class="b-from me">You</span><span class="b-time">${fmt(Date.now())}</span></div>`+(subject?`<div class="b-subject">${esc(subject)}</div>`:'')+( description?`<div class="b-desc">${esc(description)}</div>`:'')+`<div class="file-list"><div class="fc">${th}<div class="fc-info"><div class="fc-name">${esc(name)}</div><div class="fc-size">${fmtB(size)}</div></div><div class="fc-dl"><a class="dl-btn" href="${url}" download="${esc(name)}">↓ Save</a></div></div></div>`;
+  row.appendChild(bub); feed().appendChild(row); scrollFeed();
 }
 
-function renderIncomingFile(fromName, meta, peerId) {
+function renderIncomingFile(fromName,meta) {
   clearEmpty();
-  const row = mk('msg-row theirs');
-  const bub = mk('bubble');
-  bub.innerHTML =
-    `<div class="b-head"><span class="b-from">${esc(fromName)}</span><span class="b-time">${fmt(Date.now())}</span></div>` +
-    (meta.subject     ? `<div class="b-subject">${esc(meta.subject)}</div>` : '') +
-    (meta.description ? `<div class="b-desc">${esc(meta.description)}</div>` : '') +
-    `<div class="file-list"><div class="fc" id="fc-${meta.id}">
-      <div class="fc-icon">📥</div>
-      <div class="xfer-wrap">
-        <div class="xfer-name">${esc(meta.name)}</div>
-        <div class="xfer-bar"><div class="xfer-fill" style="width:0%"></div></div>
-        <div class="xfer-sub">0 / ${fmtB(meta.size)} · 0%</div>
-      </div>
-    </div></div>`;
-  row.appendChild(bub);
-  feed().appendChild(row);
-  scrollFeed();
+  const row=mk('msg-row theirs'), bub=mk('bubble');
+  bub.innerHTML=`<div class="b-head"><span class="b-from">${esc(fromName)}</span><span class="b-time">${fmt(Date.now())}</span></div>`+(meta.subject?`<div class="b-subject">${esc(meta.subject)}</div>`:'')+( meta.description?`<div class="b-desc">${esc(meta.description)}</div>`:'')+`<div class="file-list"><div class="fc" id="fc-${meta.id}"><div class="fc-icon">📥</div><div class="xfer-wrap"><div class="xfer-name">${esc(meta.name)}</div><div class="xfer-bar"><div class="xfer-fill" style="width:0%"></div></div><div class="xfer-sub">0 / ${fmtB(meta.size)} · 0%</div></div></div></div>`;
+  row.appendChild(bub); feed().appendChild(row); scrollFeed();
   return bub.querySelector(`#fc-${meta.id}`);
 }
 
-function finaliseFileCard(cardEl, name, url, size) {
-  if (!cardEl) return;
-  const isImg = /\.(jpe?g|png|gif|webp|heic|avif|svg)$/i.test(name);
-  const isVid = /\.(mp4|mov|webm|mkv|avi|m4v)$/i.test(name);
-  const ext   = name.split('.').pop().toLowerCase();
-  let thumb = '';
-  if (isImg)      thumb = `<img class="fc-thumb" src="${url}" onclick="openPrev('img','${url}','${esc(name)}')"/>`;
-  else if (isVid) thumb = `<div class="fc-icon" onclick="openPrev('vid','${url}','${esc(name)}')" style="cursor:pointer">▶️</div>`;
-  else            thumb = `<div class="fc-icon">${fileEmoji(ext)}</div>`;
-  cardEl.innerHTML =
-    `${thumb}
-    <div class="fc-info"><div class="fc-name">${esc(name)}</div><div class="fc-size">${fmtB(size)}</div></div>
-    <div class="fc-dl"><a class="dl-btn" href="${url}" download="${esc(name)}">↓ Save</a></div>`;
+function finaliseFileCard(cardEl,name,url,size) {
+  if(!cardEl) return;
+  const isImg=/\.(jpe?g|png|gif|webp|heic|avif|svg)$/i.test(name);
+  const isVid=/\.(mp4|mov|webm|mkv|avi|m4v)$/i.test(name);
+  const ext=name.split('.').pop().toLowerCase();
+  let th=isImg?`<img class="fc-thumb" src="${url}" onclick="openPrev('img','${url}','${esc(name)}')"/>`:isVid?`<div class="fc-icon" onclick="openPrev('vid','${url}','${esc(name)}')" style="cursor:pointer">▶️</div>`:`<div class="fc-icon">${fileEmoji(ext)}</div>`;
+  cardEl.innerHTML=`${th}<div class="fc-info"><div class="fc-name">${esc(name)}</div><div class="fc-size">${fmtB(size)}</div></div><div class="fc-dl"><a class="dl-btn" href="${url}" download="${esc(name)}">↓ Save</a></div>`;
   scrollFeed();
 }
 
-function sysMsg(text) { clearEmpty(); const el=mk('sys-msg'); el.textContent=text; feed().appendChild(el); scrollFeed(); }
-function feed()       { return $('feed'); }
-function scrollFeed() { const f=feed(); f.scrollTop=f.scrollHeight; }
+function sysMsg(t){clearEmpty();const el=mk('sys-msg');el.textContent=t;feed().appendChild(el);scrollFeed();}
 
 // ══════════════════════════════════════════════════════════════════
 //  DEVICES
 // ══════════════════════════════════════════════════════════════════
-function renderDevices() {
-  const list   = $('devList');
-  const others = Object.values(peers).filter(p=>p.id!==myId);
-  const myEntry = myId ? [{ id:myId, name:myName||`Device-${myId}`, deviceType, isMe:true }] : [];
-
-  // Add offline peer if connected
-  const offlinePeerConnected = offlinePC?.connectionState === 'connected';
-  const offlinePeerEntry = offlinePeerConnected
-    ? [{ id:'offline-peer', name:'Offline Peer', deviceType:'phone', isOffline:true }] : [];
-
-  const all = [...myEntry, ...others, ...offlinePeerEntry];
-  if (!all.length) { list.innerHTML='<div class="no-devs">Waiting for devices…</div>'; return; }
-
-  list.innerHTML = all.map(p => {
-    const av  = (p.name||'?')[0].toUpperCase();
-    const sel = targetId === p.id;
-    return `<div class="dev${(p.isMe||p.isOffline)?'':''} ${p.isMe?' is-me':''} ${sel?' sel':''}"
-      ${!p.isMe?`onclick="selTarget('${p.id}','${esc(p.name)}')"`:''}>
+function renderDevs() {
+  const list=$('devList');
+  const others=Object.values(peers).filter(p=>p.id!==myId);
+  const me=myId?[{id:myId,name:myName||`Device-${myId}`,deviceType,isMe:true}]:[];
+  const offPeer=offState==='connected'?[{id:'off-peer',name:'Offline Peer',deviceType:'phone',isOff:true}]:[];
+  const all=[...me,...others,...offPeer];
+  if(!all.length){list.innerHTML='<div class="no-devs">Waiting for devices…</div>';return;}
+  list.innerHTML=all.map(p=>{
+    const av=(p.name||'?')[0].toUpperCase(),sel=targetId===p.id;
+    return `<div class="dev${p.isMe?' is-me':''}${sel?' sel':''}" ${!p.isMe?`onclick="selTarget('${p.id}','${esc(p.name)}')"`:''}>
       <div class="dev-av ${p.deviceType||'desktop'}">${av}<div class="dev-online"></div></div>
-      <div class="dev-info"><div class="dev-name">${esc(p.name)}</div><div class="dev-type">${p.isOffline?'offline p2p':p.deviceType||'desktop'}</div></div>
-      ${p.isMe
-        ? `<span class="me-badge">you</span>`
-        : p.isOffline
-          ? `<span class="me-badge" style="color:var(--amber)">p2p</span>`
-          : `<button class="dev-blk" title="Block" onclick="event.stopPropagation();blockDev('${p.id}','${esc(p.name)}')">🚫</button>`}
+      <div class="dev-info"><div class="dev-name">${esc(p.name)}</div><div class="dev-sub">${p.isOff?'offline p2p':p.deviceType||'desktop'}</div></div>
+      ${p.isMe?`<span class="me-badge lan">you</span>`:p.isOff?`<span class="me-badge p2p">p2p</span>`:`<button class="dev-blk" onclick="event.stopPropagation();blockDev('${p.id}','${esc(p.name)}')">🚫</button>`}
     </div>`;
   }).join('');
-
-  const count = others.length + offlinePeerEntry.length;
-  $('devsLabel').textContent = `Devices · ${count+1}`;
-  if (currentMode === 'lan') $('chatSub').textContent = `${count} device${count!==1?'s':''} connected`;
+  const c=others.length+offPeer.length;
+  $('devsHd').textContent=`Devices · ${c+1}`;
 }
 
-function selTarget(id, name) {
-  if (targetId === id) { clearTarget(); return; }
-  targetId = id; targetName = name;
-  $('targetDisplay').innerHTML = `<div class="t-chip">🔏 ${esc(name)} <button onclick="clearTarget()">✕</button></div>`;
-  $('chatTo').textContent = `🔏 ${name}`;
-  renderDevices(); closeSidebar();
+function selTarget(id,name){
+  if(targetId===id){clearTarget();return;}
+  targetId=id;
+  $('targetDisplay').innerHTML=`<div class="t-chip">🔏 ${esc(name)} <button onclick="clearTarget()">✕</button></div>`;
+  $('chatTo').textContent=`🔏 ${name}`;
+  renderDevs(); closeSidebar();
 }
-
-function clearTarget() {
-  targetId=null; targetName='';
-  $('targetDisplay').innerHTML = `<span class="bcast-lbl">📡 Everyone</span>`;
-  $('chatTo').textContent = currentMode==='offline'?'✈️ Offline P2P':'📡 Everyone on network';
-  renderDevices();
+function clearTarget(){
+  targetId=null;
+  $('targetDisplay').innerHTML=`<span class="bcast-lbl">📡 Everyone</span>`;
+  $('chatTo').textContent=currentMode==='offline'?'✈️ Offline P2P':'📡 Everyone on network';
+  renderDevs();
 }
-
-function blockDev(id, name) {
-  if (!confirm(`Block "${name}"?`)) return;
-  sig({ type:'block', targetId:id });
-  if (targetId===id) clearTarget();
-}
+function blockDev(id,name){if(!confirm(`Block "${name}"?`))return;sig({type:'block',targetId:id});if(targetId===id)clearTarget();}
 
 // ══════════════════════════════════════════════════════════════════
-//  UI HELPERS
+//  UI
 // ══════════════════════════════════════════════════════════════════
-function setConn(cls, label) {
-  $('connDot').className = 'conn-dot '+cls;
-  $('connLabel').innerHTML = `<strong>${label}</strong>`;
-}
+function setConn(cls,label){$('connDot').className='conn-dot '+cls;$('connLabel').innerHTML=`<strong>${label}</strong>`;}
+function onTxtInput(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,130)+'px';$('sendBtn').disabled=!el.value.trim();}
+function onTxtKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendText();}}
+function toggleMeta(){$('metaWrap').classList.toggle('open');}
+function openSidebar(){$('sidebar').classList.add('open');$('sbBackdrop').classList.add('show');}
+function closeSidebar(){$('sidebar').classList.remove('open');$('sbBackdrop').classList.remove('show');}
+function openPrev(type,url,name){$('prevMedia').innerHTML=type==='img'?`<img src="${url}" alt="${name}"/>`:`<video src="${url}" controls autoplay></video>`;$('prevLbl').textContent=name;$('prevOv').classList.add('show');}
+function closePrev(e){if(e&&e.target!==$('prevOv')&&!e.currentTarget?.classList?.contains('prev-close'))return;$('prevOv').classList.remove('show');$('prevMedia').innerHTML='';}
+function openShare(){$('shareOv').classList.add('show');}
+function closeShare(){$('shareOv').classList.remove('show');}
+function copyLink(){if(!networkUrl){alert('LAN URL not loaded — are you in offline mode?');return;}navigator.clipboard?.writeText(networkUrl).then(()=>alert('Link copied!')).catch(()=>prompt('Copy:',networkUrl));}
+function copyRoomCode(){const c=$('roomPill').textContent;navigator.clipboard?.writeText(c).then(()=>alert(`Room code ${c} copied!`)).catch(()=>alert(`Room: ${c}`));}
+async function nativeShare(){try{await navigator.share({title:'Join Droply',url:networkUrl});}catch{}}
+function shareWA(){window.open(`https://wa.me/?text=${encodeURIComponent('Join my Droply room: '+networkUrl)}`);}
+function shareViber(){window.open(`viber://forward?text=${encodeURIComponent('Join my Droply room: '+networkUrl)}`);}
+function shareTG(){window.open(`https://t.me/share/url?url=${encodeURIComponent(networkUrl)}&text=${encodeURIComponent('Join my Droply room')}`);}
+function shareSMS(){window.open(`sms:?body=${encodeURIComponent('Join my Droply room: '+networkUrl)}`);}
+function openNameModal(){$('nameInp').value=myName;$('nameModal').classList.add('show');setTimeout(()=>$('nameInp').focus(),80);}
+function closeNameModal(){$('nameModal').classList.remove('show');}
+function saveName(){const n=$('nameInp').value.trim();if(!n)return;myName=n;localStorage.setItem('droply_name',n);identify();closeNameModal();}
+function fileEmoji(e){return{pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',csv:'📊',ppt:'📊',pptx:'📊',zip:'🗜️',rar:'🗜️','7z':'🗜️',gz:'🗜️',mp3:'🎵',aac:'🎵',wav:'🎵',flac:'🎵',apk:'📱'}[e]||'📁';}
 
-function onTxtInput(el) {
-  el.style.height='auto';
-  el.style.height=Math.min(el.scrollHeight,130)+'px';
-  $('sendBtn').disabled=!el.value.trim();
-}
-function onTxtKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendText();} }
-function toggleMeta() { $('metaWrap').classList.toggle('open'); }
-function openSidebar()  { $('sidebar').classList.add('open');  $('sbBackdrop').classList.add('show'); }
-function closeSidebar() { $('sidebar').classList.remove('open'); $('sbBackdrop').classList.remove('show'); }
+// Drag & drop
+let dragT;
+document.addEventListener('dragenter',e=>{e.preventDefault();$('dragOv').classList.add('show');});
+document.addEventListener('dragover', e=>{e.preventDefault();clearTimeout(dragT);});
+document.addEventListener('dragleave',()=>{dragT=setTimeout(()=>$('dragOv').classList.remove('show'),80);});
+document.addEventListener('drop',e=>{e.preventDefault();$('dragOv').classList.remove('show');handleFiles(e.dataTransfer.files);});
 
-function openPrev(type,url,name) {
-  $('prevMedia').innerHTML = type==='img'
-    ? `<img src="${url}" alt="${name}"/>`
-    : `<video src="${url}" controls autoplay></video>`;
-  $('prevLbl').textContent=name; $('prevOv').classList.add('show');
-}
-function closePrev(e) {
-  if(e&&e.target!==$('prevOv')&&!e.currentTarget?.classList?.contains('prev-close'))return;
-  $('prevOv').classList.remove('show'); $('prevMedia').innerHTML='';
-}
-
-function openShare()     { $('shareOv').classList.add('show'); }
-function closeShare()    { $('shareOv').classList.remove('show'); }
-function closeShareBg(e) { if(e.target===$('shareOv'))closeShare(); }
-
-function copyLink() {
-  if (!networkUrl) { alert('LAN URL not loaded — are you in offline mode?'); return; }
-  navigator.clipboard?.writeText(networkUrl)
-    .then(()=>alert('Link copied! Share with devices on the same WiFi.'))
-    .catch(()=>prompt('Copy this link:',networkUrl));
-}
-async function nativeShare() { try{ await navigator.share({title:'Join Droply',url:networkUrl}); }catch{} }
-function shareWA()    { window.open(`https://wa.me/?text=${encodeURIComponent('Join my Droply room: '+networkUrl)}`); }
-function shareViber() { window.open(`viber://forward?text=${encodeURIComponent('Join my Droply room: '+networkUrl)}`); }
-function shareTG()    { window.open(`https://t.me/share/url?url=${encodeURIComponent(networkUrl)}&text=${encodeURIComponent('Join my Droply room')}`); }
-function shareSMS()   { window.open(`sms:?body=${encodeURIComponent('Join my Droply room: '+networkUrl)}`); }
-
-function openNameModal()  { $('nameInp').value=myName; $('nameModal').classList.add('show'); setTimeout(()=>$('nameInp').focus(),80); }
-function closeNameModal() { $('nameModal').classList.remove('show'); }
-function saveName() {
-  const n=$('nameInp').value.trim(); if(!n)return;
-  myName=n; localStorage.setItem('droply_name',n); identify(); closeNameModal();
-}
-
-function fileEmoji(ext) {
-  if(['pdf'].includes(ext))               return '📄';
-  if(['doc','docx'].includes(ext))        return '📝';
-  if(['xls','xlsx','csv'].includes(ext))  return '📊';
-  if(['ppt','pptx'].includes(ext))        return '📊';
-  if(['zip','rar','7z','gz'].includes(ext))return '🗜️';
-  if(['mp3','aac','wav','flac'].includes(ext))return '🎵';
-  if(['apk'].includes(ext))               return '📱';
-  return '📁';
-}
-
-// ══════════════════════════════════════════════════════════════════
-//  DRAG & DROP
-// ══════════════════════════════════════════════════════════════════
-let dragTimer;
-document.addEventListener('dragenter',e=>{e.preventDefault();$('dragOv').classList.add('show')});
-document.addEventListener('dragover', e=>{e.preventDefault();clearTimeout(dragTimer)});
-document.addEventListener('dragleave',()=>{dragTimer=setTimeout(()=>$('dragOv').classList.remove('show'),80)});
-document.addEventListener('drop',e=>{
-  e.preventDefault(); $('dragOv').classList.remove('show'); handleFiles(e.dataTransfer.files);
-});
-
-// ══════════════════════════════════════════════════════════════════
-//  BOOT
-// ══════════════════════════════════════════════════════════════════
+// Boot
 connect();
 setMode('lan');
-if (!myName) setTimeout(openNameModal, 900);
+if(!myName) setTimeout(openNameModal,900);
 </script>
-
-<!-- jsQR for camera-based QR scanning in offline mode -->
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </body>
 </html>
+HTMLEOF
+echo "done — $(wc -l < /mnt/user-data/outputs/droply/index.html) lines"
