@@ -69,12 +69,20 @@ function getClientIP(req) {
 }
 
 function isLAN(ip) {
-  const c = ip.replace(/^::ffff:/, '');
+  if (!ip) return false;
+  // Normalise — strip IPv6-mapped IPv4 prefix
+  const c = ip.replace(/^::ffff:/i, '').trim();
   return (
-    c === '127.0.0.1' || c === '::1' ||
-    /^10\./.test(c) ||
-    /^192\.168\./.test(c) ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(c)
+    c === '127.0.0.1'  ||
+    c === '::1'        ||
+    c === 'localhost'  ||
+    c === ''           ||  // unix socket / same process
+    /^10\./i.test(c)   ||
+    /^192\.168\./i.test(c) ||
+    /^172\.(1[6-9]|2\d|3[01])\./i.test(c) ||
+    /^169\.254\./i.test(c) ||  // link-local
+    /^fc00:/i.test(c)  ||  // IPv6 unique local
+    /^fd[0-9a-f]{2}:/i.test(c)  // IPv6 unique local
   );
 }
 
@@ -106,9 +114,11 @@ const server = http.createServer(async (req, res) => {
   const url      = new URL(req.url, 'http://localhost');
   const pathname = url.pathname;
   const ip       = getClientIP(req);
+  const isLocal  = isLAN(ip);
+  console.log(`[HTTP] ${req.method} ${pathname} — ip: ${ip} — lan: ${isLocal}`);
 
   // Only allow LAN connections
-  if (!isLAN(ip)) {
+  if (!isLocal) {
     res.writeHead(403); return res.end('Local network only');
   }
 
